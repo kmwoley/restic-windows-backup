@@ -1,0 +1,60 @@
+# default excludes
+# examples https://github.com/duplicati/duplicati/blob/master/Duplicati/Library/Utility/FilterGroups.cs
+# note, because we're using a VSS directory, we can use that as the root dir for exclude rules (i.e. resticVSS)
+resticVSS\hiberfil.sys
+resticVSS\pagefile.sys
+resticVSS\swapfile.sys
+resticVSS\$Recycle.Bin
+resticVSS\autoexec.bat
+resticVSS\Config.Msi
+resticVSS\Documents and Settings
+resticVSS\Recycled
+resticVSS\Recycler
+resticVSS\System Volume Information
+resticVSS\Recovery
+resticVSS\Program Files
+resticVSS\Program Files (x86)
+resticVSS\ProgramData
+resticVSS\PerfLogs
+resticVSS\Windows
+resticVSS\Windows.old
+Microsoft\Windows\Recent
+Microsoft\**\RecoveryStore*
+Microsoft\**\Windows\*.edb
+Microsoft\**\Windows\*.log
+Microsoft\**\Windows\Cookies*
+MSOCache
+NTUSER*
+ntuser*
+UsrClass.dat
+
+# cloud services
+Dropbox
+AppData\Local\Google\Drive
+Google Drive\.tmp.drivedownload
+resticVSS\OneDriveTemp
+
+# browsers
+Google\Chrome
+
+# AppData
+AppData\Local\Microsoft
+AppData\Local\Duplicati
+AppData\Local\D3DSCache
+AppData\Local\ConnectedDevicesPlatform
+AppData\Local\Packages
+AppData\Roaming\Signal
+AppData\Local\ElevatedDiagnostics
+AppData\Local\Microsoft\Windows\Explorer
+AppData\Local\Microsoft\Windows\INetCache
+AppData\Local\Microsoft\Windows\WebCache
+AppData\Local\Microsoft\Windows Store
+AppData\Local\restic
+AppData\LocalLow\Microsoft\CryptnetUrlCache
+AppData\Local\IsolatedStorage
+
+# misc. temporary files
+Temporary Internet Files
+Thumbs.db
+AppData\Local\Temp
+Users\Public\AccountPictures

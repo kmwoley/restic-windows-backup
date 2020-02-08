@@ -1,0 +1,44 @@
+. .\config.ps1
+
+
+# Create log directory if it doesn't exit
+if(-not (Test-Path $LogPath)) {
+    New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
+    Write-Output "[[Init]] Repository successfully initialized."
+}
+
+# Create the local exclude file
+if(-not (Test-Path $LocalExcludeFile)) {
+    New-Item -Type File -Path $LocalExcludeFile | Out-Null
+}
+
+# Initialize the restic repository
+& $ResticExe --verbose init
+if($?) {
+    Write-Output "[[Init]] Repository successfully initialized."
+}
+else {
+    Write-Warning "[[Init]] Repository initialization failed. Check errors and resolve."
+}
+
+# Scheduled Windows Task Scheduler to run the backup
+$backup_task_name = "Restic Backup"
+$backup_task = Get-ScheduledTask $backup_task_name -ErrorAction SilentlyContinue
+if($null -eq $backup_task) {
+    try {
+        $task_action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NonInteractive -NoLogo -NoProfile -Command ".\backup.ps1; exit $LASTEXITCODE"' -WorkingDirectory $InstallPath
+        $task_user = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest
+        $task_settings = New-ScheduledTaskSettingsSet -RestartCount 4 -RestartInterval (New-TimeSpan -Minutes 15) -ExecutionTimeLimit (New-TimeSpan -Days 3) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -MultipleInstances IgnoreNew -IdleDuration 0 -IdleWaitTimeout 0 -StartWhenAvailable -RestartOnIdle
+        $task_trigger = New-ScheduledTaskTrigger -Daily -At 4:00am
+        Register-ScheduledTask $backup_task_name -Action $task_action -Principal $task_user -Settings $task_settings -Trigger $task_trigger | Out-Null
+        Write-Output "[[Scheduler]] Backup task scheduled."
+    }
+    catch {
+        Write-Warning "[[Scheduler]] Scheduling failed."
+    }
+}
+else {
+    Write-Warning "[[Scheduler]] Backup task not scheduled: there is already a task with the name '$backup_task_name'."
+}
+
+
