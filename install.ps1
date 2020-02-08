@@ -1,5 +1,15 @@
 . .\config.ps1
 
+# download restic
+if(-not (Test-Path $ResticExe)) {
+    $url = "https://github.com/restic/restic/releases/download/v0.9.6/restic_0.9.6_windows_amd64.zip"
+    $output = Join-Path $InstallPath "restic.zip"
+    Invoke-WebRequest -Uri $url -OutFile $output
+    Expand-Archive -LiteralPath $output $InstallPath
+    Remove-Item $output
+    Get-ChildItem *.exe | Rename-Item -NewName $ExeName
+}
+
 
 # Create log directory if it doesn't exit
 if(-not (Test-Path $LogPath)) {

@@ -1,6 +1,7 @@
 # backup configuration
+$ExeName = "restic.exe"
 $InstallPath = "C:\restic"
-$ResticExe = Join-Path $InstallPath "restic.exe"
+$ResticExe = Join-Path $InstallPath $ExeName
 $StateFile = Join-Path $InstallPath "state.xml"
 $WindowsExcludeFile = Join-Path $InstallPath "windows.exclude"
 $LocalExcludeFile = Join-Path $InstallPath "local.exclude"

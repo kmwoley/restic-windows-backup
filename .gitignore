@@ -2,3 +2,4 @@ local.exclude
 logs
 restic.exe
 secrets.ps1
+state.xml
