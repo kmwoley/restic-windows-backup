@@ -28,6 +28,8 @@ Simplifies the process of installation and running daily backups.
 1. Run `install.ps1` file
    1. From the elevated (Run as Administrator) Powershell window, run `.\install.ps1`
    1. This will initialize the repro, create your logfile directory, and create a scheduled task in Windows Task Scheduler to run the task daily.
+1. Add files/paths not to backup to `local.exclude`
+   1. If you don't want to modify the included exclude file, you can add any files/paths you want to exclude from the backup to `local.exclude`
 1. Add `restic.exe` to the Windows Defender / Virus & Threat Detection Exclude list
    1. Backups on Windows are really slow if you don't set the Antivirus to ignore restic.
    1. Navigate from the Start menu to: *Virus & threat protection > Manage Settings > Exclusions (Add or remove exclusions) > Add an exclusion (Process) > Process Name: "restic.exe"*
