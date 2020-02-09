@@ -1,4 +1,5 @@
 . .\config.ps1
+. .\secrets.ps1
 
 # download restic
 if(-not (Test-Path $ResticExe)) {
