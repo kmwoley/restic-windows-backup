@@ -45,6 +45,12 @@ function Invoke-Unlock {
 function Invoke-Maintenance {
     Param($SuccessLog, $ErrorLog)
     
+    # skip maintenance if disabled
+    if($SnapshotMaintenanceEnabled -eq $false) {
+        Write-Output "[[Maintenance]] Skipped - maintenance disabled" | Tee-Object -Append $SuccessLog
+        return
+    }
+
     # skip maintenance if it's been done recently
     if(($null -ne $ResticStateLastMaintenance) -and ($null -ne $ResticStateMaintenanceCounter)) {
         $Script:ResticStateMaintenanceCounter += 1
@@ -121,14 +127,20 @@ function Invoke-Backup {
     $starting_location = Get-Location
     ForEach ($item in $BackupSources.GetEnumerator()) {
 
-        # Create the Shadow Copy
+        $ShadowPath = Join-Path $item.Key 'resticVSS'
+
+        # check for existance of previous, orphaned VSS directory (and remove it) before creating the shadow copy
+        if(Test-Path $ShadowPath) {
+            Write-Output "[[Backup]] VSS directory exists: '$ShadowPath' - removing. Past script failure?" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
+            cmd /c rmdir $ShadowPath
+        }
+        
+        # Create the shadow copy
         $s1 = (Get-WmiObject -List Win32_ShadowCopy).Create($item.Key, "ClientAccessible")
         $s2 = Get-WmiObject -Class Win32_ShadowCopy | Where-Object { $_.ID -eq $s1.ShadowID }
-
-        $device  = $s2.DeviceObject + "\"
-        $ShadowPath = Join-Path $item.Key 'resticVSS'
         
         # Create a symbolic link to the shadow copy
+        $device  = $s2.DeviceObject + "\"
         cmd /c mklink /d $ShadowPath "$device" 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
 
         # Build the new list of folders
@@ -192,8 +204,10 @@ function Send-Email {
         $attachments = @{Attachments = $ErrorLog}
         $status = "ERROR"
     }
-    $subject = "$env:COMPUTERNAME Restic Backup Report [$status]"
-    Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments
+    if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or (($status -eq "ERROR") -and ($SendEmailOnError -ne $false))) {
+        $subject = "$env:COMPUTERNAME Restic Backup Report [$status]"
+        Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments
+    }
 }
 
 function Invoke-ConnectivityCheck {
@@ -294,6 +308,7 @@ function Invoke-Main {
         
         Write-Output "Something went wrong. Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
         if($internet_available -eq $true) {
+            Invoke-HistoryCheck $success_log $error_log
             Send-Email $success_log $error_log
         }
         Start-Sleep (15*60)
