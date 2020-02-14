@@ -127,18 +127,20 @@ function Invoke-Backup {
     $starting_location = Get-Location
     ForEach ($item in $BackupSources.GetEnumerator()) {
 
-        # Create the Shadow Copy
-        $s1 = (Get-WmiObject -List Win32_ShadowCopy).Create($item.Key, "ClientAccessible")
-        $s2 = Get-WmiObject -Class Win32_ShadowCopy | Where-Object { $_.ID -eq $s1.ShadowID }
-
-        $device  = $s2.DeviceObject + "\"
         $ShadowPath = Join-Path $item.Key 'resticVSS'
-        
-        # Create a symbolic link to the shadow copy
+
+        # check for existance of previous, orphaned VSS directory (and remove it) before creating the shadow copy
         if(Test-Path $ShadowPath) {
             Write-Output "[[Backup]] VSS directory exists: '$ShadowPath' - removing. Past script failure?" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
             cmd /c rmdir $ShadowPath
         }
+        
+        # Create the shadow copy
+        $s1 = (Get-WmiObject -List Win32_ShadowCopy).Create($item.Key, "ClientAccessible")
+        $s2 = Get-WmiObject -Class Win32_ShadowCopy | Where-Object { $_.ID -eq $s1.ShadowID }
+        
+        # Create a symbolic link to the shadow copy
+        $device  = $s2.DeviceObject + "\"
         cmd /c mklink /d $ShadowPath "$device" 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
 
         # Build the new list of folders
