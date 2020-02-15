@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1](https://github.com/kmwoley/restic-windows-backup/tree//1.1) (2020-02-15)
+## [1.1](https://github.com/kmwoley/restic-windows-backup/tree/1.1) (2020-02-15)
 
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.0...1.1)
 
