@@ -212,12 +212,21 @@ function Send-Email {
 
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
-    
+    #  Skip the internet connectivity check unsupported repo types (i.e. swift:, rclone:, or local )
+    if(($env:RESTIC_REPOSITORY -match "^swift:") -or ($env:RESTIC_REPOSITORY -match "^rclone:") -or (Test-Path $env:RESTIC_REPOSITORY)) {
+        Write-Output "[[Internet]] Skipping internet connectivity check." | Tee-Object -Append $SuccessLog    
+        return $true
+    }
+
     # parse connection string for hostname
-    # TODO: handle non-s3 repositories
-    #   Uri parser doesn't handle leading connection type info
-    $connection_string = $env:RESTIC_REPOSITORY -replace "s3:" 
+    #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:, azure:, gs:)
+    $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:" -replace "^azure:" -replace "^gs:"
     $repository_host = ([System.Uri]$connection_string).host
+
+    if([string]::IsNullOrEmpty($repository_host)) {
+        Write-Output "[[Internet]] Repository string could not be parsed." | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
+        return $false
+    }
 
     # test for internet connectivity
     $connections = 0
@@ -225,7 +234,7 @@ function Invoke-ConnectivityCheck {
     while($true) {
         $connections = Get-NetRoute | Where-Object DestinationPrefix -eq '0.0.0.0/0' | Get-NetIPInterface | Where-Object ConnectionState -eq 'Connected' | Measure-Object | ForEach-Object{$_.Count}
         if($sleep_count -le 0) {
-            Write-Output "[[Internet]] Connection to repository could not be established." | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
+            Write-Output "[[Internet]] Connection to repository ($repository_host) could not be established." | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
             return $false
         }
         if(($null -eq $connections) -or ($connections -eq 0)) {
