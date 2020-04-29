@@ -191,9 +191,16 @@ function Send-Email {
     $credentials = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)
 
     $status = "SUCCESS"
+    $success_after_failure = $false
     $body = ""
     if (($null -ne $SuccessLog) -and (Test-Path $SuccessLog) -and (Get-Item $SuccessLog).Length -gt 0) {
         $body = $(Get-Content -Raw $SuccessLog)
+        # if previous run contained an error, send the success email confirming that the error has been resolved
+        # (i.e. get previous error log, if it's not empty, trigger the send of the success-after-failure email)
+        $previous_error_log = Get-ChildItem $LogPath -Filter '*err.txt' | Sort-Object -Descending LastWriteTime | Select-Object -Skip 1 | Select-Object -First 1
+        if(($null -ne $previous_error_log) -and ($previous_error_log.Length -gt 0)){
+            $success_after_failure = $true
+        }
     }
     else {
         $body = "Crtical Error! Restic backup log is empty or missing. Check log file path."
@@ -204,7 +211,7 @@ function Send-Email {
         $attachments = @{Attachments = $ErrorLog}
         $status = "ERROR"
     }
-    if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or (($status -eq "ERROR") -and ($SendEmailOnError -ne $false))) {
+    if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or ((($status -eq "ERROR") -or $success_after_failure) -and ($SendEmailOnError -ne $false))) {
         $subject = "$env:COMPUTERNAME Restic Backup Report [$status]"
         Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments
     }
@@ -255,7 +262,7 @@ function Invoke-ConnectivityCheck {
 # check previous logs
 function Invoke-HistoryCheck {
     Param($SuccessLog, $ErrorLog)
-    $logs = Get-ChildItem $LogPath -Filter '*err.txt' | %{$_.Length -gt 0}
+    $logs = Get-ChildItem $LogPath -Filter '*err.txt' | ForEach-Object{$_.Length -gt 0}
     $logs_with_success = ($logs | Where-Object {($_ -eq $false)}).Count
     if($logs.Count -gt 0) {
         Write-Output "[[History]] Backup success rate: $logs_with_success / $($logs.Count) ($(($logs_with_success / $logs.Count).tostring("P")))" | Tee-Object -Append $SuccessLog
