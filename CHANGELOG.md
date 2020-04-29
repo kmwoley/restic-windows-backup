@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2](https://github.com/kmwoley/restic-windows-backup/tree/HEAD)
+
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.1...HEAD)
+
+* Internet connectivity test now supports more repository types (s3:, sftp:, rest:, azure:, gs:), and ignores unsupported (swift:, rclone: and local) 
+* Add 32-bit support in the `install.ps1`
+
+
+**Closed issues:**
+
+- Use non-s3 repos [\#10](https://github.com/kmwoley/restic-windows-backup/issues/10)
+- Test-Connection fails [\#9](https://github.com/kmwoley/restic-windows-backup/issues/9)
+- Add changelog [\#1](https://github.com/kmwoley/restic-windows-backup/issues/1)
+
 ## [1.1](https://github.com/kmwoley/restic-windows-backup/tree/1.1) (2020-02-15)
 
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.0...1.1)
@@ -21,6 +35,7 @@ $SendEmailOnError = $true
 
 **Merged pull requests:**
 
+- add changelog [\#6](https://github.com/kmwoley/restic-windows-backup/pull/6) ([kmwoley](https://github.com/kmwoley))
 - add options to enable/disable email sending  and maintenance [\#4](https://github.com/kmwoley/restic-windows-backup/pull/4) ([kmwoley](https://github.com/kmwoley))
 
 ## [1.0](https://github.com/kmwoley/restic-windows-backup/tree/1.0) (2020-02-09)
