@@ -3,7 +3,13 @@
 
 # download restic
 if(-not (Test-Path $ResticExe)) {
-    $url = "https://github.com/restic/restic/releases/download/v0.9.6/restic_0.9.6_windows_amd64.zip"
+    $url = $null
+    if([Environment]::Is64BitOperatingSystem){
+        $url = "https://github.com/restic/restic/releases/download/v0.9.6/restic_0.9.6_windows_amd64.zip"
+    }
+    else {
+        $url = "https://github.com/restic/restic/releases/download/v0.9.6/restic_0.9.6_windows_386.zip"
+    }
     $output = Join-Path $InstallPath "restic.zip"
     Invoke-WebRequest -Uri $url -OutFile $output
     Expand-Archive -LiteralPath $output $InstallPath
