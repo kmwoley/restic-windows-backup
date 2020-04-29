@@ -52,6 +52,12 @@ AppData\Local\Microsoft\Windows Store
 AppData\Local\restic
 AppData\LocalLow\Microsoft\CryptnetUrlCache
 AppData\Local\IsolatedStorage
+AppData\Local\Spotify
+AppData\Local\Programs\signal-desktop
+AppData\Roaming\Code
+AppData\Roaming\Slack
+AppData\Roaming\Spotify
+AppData\Roaming\Zoom
 
 # misc. temporary files
 Temporary Internet Files
