@@ -322,13 +322,20 @@ function Invoke-Main {
         Write-Warning "Errors found! Error Log: $error_log"
         $error_count++
         
-        Write-Output "Something went wrong. Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
+        $attempt_count--
+        if($attempt_count -gt 0) {
+            Write-Output "Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
+        }
+        else {
+            Write-Output "Retry limit has been reached. No more attempts to backup will be made." | Tee-Object -Append $success_log
+        }
         if($internet_available -eq $true) {
             Invoke-HistoryCheck $success_log $error_log
             Send-Email $success_log $error_log
         }
-        Start-Sleep (15*60)
-        $attempt_count--
+        if($attempt_count -gt 0) {
+            Start-Sleep (15*60)
+        }
     }    
 
     Set-BackupState
