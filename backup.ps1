@@ -219,15 +219,20 @@ function Send-Email {
 
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
-    #  Skip the internet connectivity check unsupported repo types (i.e. swift:, rclone:, or local )
-    if(($env:RESTIC_REPOSITORY -match "^swift:") -or ($env:RESTIC_REPOSITORY -match "^rclone:") -or (Test-Path $env:RESTIC_REPOSITORY)) {
+    #  Skip the internet connectivity check for unsupported repo types (e.g. swift:, rclone:, local, etc. )
+    if(($env:RESTIC_REPOSITORY -match "^swift:") -or 
+       ($env:RESTIC_REPOSITORY -match "^rclone:") -or 
+       ($env:RESTIC_REPOSITORY -match "^b2:") -or 
+       ($env:RESTIC_REPOSITORY -match "^azure:") -or
+       ($env:RESTIC_REPOSITORY -match "^gs:") -or
+       (Test-Path $env:RESTIC_REPOSITORY)) {
         Write-Output "[[Internet]] Skipping internet connectivity check." | Tee-Object -Append $SuccessLog    
         return $true
     }
 
     # parse connection string for hostname
-    #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:, azure:, gs:)
-    $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:" -replace "^azure:" -replace "^gs:"
+    #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:)
+    $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:"
     $repository_host = ([System.Uri]$connection_string).host
 
     if([string]::IsNullOrEmpty($repository_host)) {
