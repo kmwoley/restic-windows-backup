@@ -191,9 +191,16 @@ function Send-Email {
     $credentials = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)
 
     $status = "SUCCESS"
+    $success_after_failure = $false
     $body = ""
     if (($null -ne $SuccessLog) -and (Test-Path $SuccessLog) -and (Get-Item $SuccessLog).Length -gt 0) {
         $body = $(Get-Content -Raw $SuccessLog)
+        # if previous run contained an error, send the success email confirming that the error has been resolved
+        # (i.e. get previous error log, if it's not empty, trigger the send of the success-after-failure email)
+        $previous_error_log = Get-ChildItem $LogPath -Filter '*err.txt' | Sort-Object -Descending LastWriteTime | Select-Object -Skip 1 | Select-Object -First 1
+        if(($null -ne $previous_error_log) -and ($previous_error_log.Length -gt 0)){
+            $success_after_failure = $true
+        }
     }
     else {
         $body = "Crtical Error! Restic backup log is empty or missing. Check log file path."
@@ -204,7 +211,7 @@ function Send-Email {
         $attachments = @{Attachments = $ErrorLog}
         $status = "ERROR"
     }
-    if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or (($status -eq "ERROR") -and ($SendEmailOnError -ne $false))) {
+    if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or ((($status -eq "ERROR") -or $success_after_failure) -and ($SendEmailOnError -ne $false))) {
         $subject = "$env:COMPUTERNAME Restic Backup Report [$status]"
         Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments
     }
@@ -212,16 +219,34 @@ function Send-Email {
 
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
-    #  Skip the internet connectivity check unsupported repo types (i.e. swift:, rclone:, or local )
-    if(($env:RESTIC_REPOSITORY -match "^swift:") -or ($env:RESTIC_REPOSITORY -match "^rclone:") -or (Test-Path $env:RESTIC_REPOSITORY)) {
+    # skip the internet connectivity check for local repos
+    if(Test-Path $env:RESTIC_REPOSITORY) {
         Write-Output "[[Internet]] Skipping internet connectivity check." | Tee-Object -Append $SuccessLog    
         return $true
     }
 
-    # parse connection string for hostname
-    #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:, azure:, gs:)
-    $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:" -replace "^azure:" -replace "^gs:"
-    $repository_host = ([System.Uri]$connection_string).host
+    $repository_host = ''
+
+    # use generic internet service for non-specific repo types (e.g. swift:, rclone:, etc. )
+    if(($env:RESTIC_REPOSITORY -match "^swift:") -or 
+        ($env:RESTIC_REPOSITORY -match "^rclone:")) {
+        $repository_host = "cloudflare.com"
+    }
+    elseif($env:RESTIC_REPOSITORY -match "^b2:") {
+        $repository_host = "api.backblazeb2.com"
+    }
+    elseif($env:RESTIC_REPOSITORY -match "^azure:") {
+        $repository_host = "azure.microsoft.com"
+    }
+    elseif($env:RESTIC_REPOSITORY -match "^gs:") {
+        $repository_host = "storage.googleapis.com"
+    }
+    else {
+        # parse connection string for hostname
+        #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:)
+        $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:"
+        $repository_host = ([System.Uri]$connection_string).host
+    }
 
     if([string]::IsNullOrEmpty($repository_host)) {
         Write-Output "[[Internet]] Repository string could not be parsed." | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
@@ -255,7 +280,7 @@ function Invoke-ConnectivityCheck {
 # check previous logs
 function Invoke-HistoryCheck {
     Param($SuccessLog, $ErrorLog)
-    $logs = Get-ChildItem $LogPath -Filter '*err.txt' | %{$_.Length -gt 0}
+    $logs = Get-ChildItem $LogPath -Filter '*err.txt' | ForEach-Object{$_.Length -gt 0}
     $logs_with_success = ($logs | Where-Object {($_ -eq $false)}).Count
     if($logs.Count -gt 0) {
         Write-Output "[[History]] Backup success rate: $logs_with_success / $($logs.Count) ($(($logs_with_success / $logs.Count).tostring("P")))" | Tee-Object -Append $SuccessLog
@@ -315,13 +340,20 @@ function Invoke-Main {
         Write-Warning "Errors found! Error Log: $error_log"
         $error_count++
         
-        Write-Output "Something went wrong. Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
+        $attempt_count--
+        if($attempt_count -gt 0) {
+            Write-Output "Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
+        }
+        else {
+            Write-Output "Retry limit has been reached. No more attempts to backup will be made." | Tee-Object -Append $success_log
+        }
         if($internet_available -eq $true) {
             Invoke-HistoryCheck $success_log $error_log
             Send-Email $success_log $error_log
         }
-        Start-Sleep (15*60)
-        $attempt_count--
+        if($attempt_count -gt 0) {
+            Start-Sleep (15*60)
+        }
     }    
 
     Set-BackupState

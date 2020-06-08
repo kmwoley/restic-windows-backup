@@ -1,18 +1,25 @@
 # Changelog
 
-## [1.2](https://github.com/kmwoley/restic-windows-backup/tree/HEAD) (2020-04-28)
+## [1.2.1](https://github.com/kmwoley/restic-windows-backup/tree/HEAD) (2020-06-08)
 
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.1...HEAD)
 
+* Fix/improve internet connectivity checks for azure: gs: b2:
 * Internet connectivity test now supports more repository types (s3:, sftp:, rest:, azure:, gs:), and ignores unsupported (swift:, rclone: and local) 
 * Add 32-bit support in the `install.ps1`
 
 
 **Closed issues:**
 
+- Need to strip rest: in addition to s3: from RESTIC\_REPOSITORY [\#14](https://github.com/kmwoley/restic-windows-backup/issues/14)
 - Use non-s3 repos [\#10](https://github.com/kmwoley/restic-windows-backup/issues/10)
 - Test-Connection fails [\#9](https://github.com/kmwoley/restic-windows-backup/issues/9)
+- 32bit Windows Support [\#7](https://github.com/kmwoley/restic-windows-backup/issues/7)
 - Add changelog [\#1](https://github.com/kmwoley/restic-windows-backup/issues/1)
+
+**Merged pull requests:**
+
+- 1.2 Release [\#13](https://github.com/kmwoley/restic-windows-backup/pull/13) ([kmwoley](https://github.com/kmwoley))
 
 ## [1.1](https://github.com/kmwoley/restic-windows-backup/tree/1.1) (2020-02-15)
 
