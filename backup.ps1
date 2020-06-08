@@ -219,21 +219,34 @@ function Send-Email {
 
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
-    #  Skip the internet connectivity check for unsupported repo types (e.g. swift:, rclone:, local, etc. )
-    if(($env:RESTIC_REPOSITORY -match "^swift:") -or 
-       ($env:RESTIC_REPOSITORY -match "^rclone:") -or 
-       ($env:RESTIC_REPOSITORY -match "^b2:") -or 
-       ($env:RESTIC_REPOSITORY -match "^azure:") -or
-       ($env:RESTIC_REPOSITORY -match "^gs:") -or
-       (Test-Path $env:RESTIC_REPOSITORY)) {
+    # skip the internet connectivity check for local repos
+    if(Test-Path $env:RESTIC_REPOSITORY) {
         Write-Output "[[Internet]] Skipping internet connectivity check." | Tee-Object -Append $SuccessLog    
         return $true
     }
 
-    # parse connection string for hostname
-    #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:)
-    $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:"
-    $repository_host = ([System.Uri]$connection_string).host
+    $repository_host = ''
+
+    # use generic internet service for non-specific repo types (e.g. swift:, rclone:, etc. )
+    if(($env:RESTIC_REPOSITORY -match "^swift:") -or 
+        ($env:RESTIC_REPOSITORY -match "^rclone:")) {
+        $repository_host = "cloudflare.com"
+    }
+    elseif($env:RESTIC_REPOSITORY -match "^b2:") {
+        $repository_host = "api.backblazeb2.com"
+    }
+    elseif($env:RESTIC_REPOSITORY -match "^azure:") {
+        $repository_host = "azure.microsoft.com"
+    }
+    elseif($env:RESTIC_REPOSITORY -match "^gs:") {
+        $repository_host = "storage.googleapis.com"
+    }
+    else {
+        # parse connection string for hostname
+        #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:)
+        $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:"
+        $repository_host = ([System.Uri]$connection_string).host
+    }
 
     if([string]::IsNullOrEmpty($repository_host)) {
         Write-Output "[[Internet]] Repository string could not be parsed." | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
