@@ -244,7 +244,7 @@ function Invoke-ConnectivityCheck {
     else {
         # parse connection string for hostname
         #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:)
-        $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:"
+        $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:","s3://" -replace "^sftp:","sftp://" -replace "^rest:","rest://"
         $repository_host = ([System.Uri]$connection_string).host
     }
 
