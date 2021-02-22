@@ -67,7 +67,7 @@ function Invoke-Maintenance {
 
     # forget snapshots based upon the retention policy
     Write-Output "[[Maintenance]] Start forgetting..." | Tee-Object -Append $SuccessLog
-    & $ResticExe --verbose -q forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
+    & $ResticExe forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
     if(-not $?) {
         Write-Output "[[Maintenance]] Forget operation completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
         $maintenance_success = $false
@@ -76,7 +76,7 @@ function Invoke-Maintenance {
     # prune (remove) data from the backup step. Running this separate from `forget` because
     #   `forget` only prunes when it detects removed snapshots upon invocation, not previously removed
     Write-Output "[[Maintenance]] Start pruning..." | Tee-Object -Append $SuccessLog
-    & $ResticExe --verbose -q prune 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
+    & $ResticExe prune 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
     if(-not $?) {
         Write-Output "[[Maintenance]] Prune operation completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
         $maintenance_success = $false
@@ -103,7 +103,7 @@ function Invoke-Maintenance {
         $Script:ResticStateLastDeepMaintenance = Get-Date
     }
 
-    & $ResticExe --verbose -q check @data_check 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
+    & $ResticExe check @data_check 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
     if(-not $?) {
         Write-Output "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
         $maintenance_success = $false
@@ -113,7 +113,7 @@ function Invoke-Maintenance {
     
     if($maintenance_success -eq $true) {
         $Script:ResticStateLastMaintenance = Get-Date
-        $Script:ResticStateMaintenanceCounter = 0;
+        $Script:ResticStateMaintenanceCounter = 0
     }
 }
 
@@ -166,7 +166,7 @@ function Invoke-Backup {
         }
 
         # Launch Restic
-        & $ResticExe --verbose -q backup $folder_list --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
+        & $ResticExe backup $folder_list --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
         if(-not $?) {
             Write-Output "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
             $return_value = $false
