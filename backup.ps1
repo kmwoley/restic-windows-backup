@@ -213,7 +213,19 @@ function Send-Email {
     }
     if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or ((($status -eq "ERROR") -or $success_after_failure) -and ($SendEmailOnError -ne $false))) {
         $subject = "$env:COMPUTERNAME Restic Backup Report [$status]"
-        Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments
+
+        # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
+        $temp_error_log = $ErrorLog + "_temp"
+
+        Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
+
+        if(-not $?) {
+            Write-Output "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Tee-Object -Append $SuccessLog
+        }
+
+        # join error logs and remove the temporary
+        Get-Content $temp_error_log | Add-Content $ErrorLog
+        Remove-Item $temp_error_log
     }
 }
 
@@ -337,15 +349,15 @@ function Invoke-Main {
             }
         }
 
-        Write-Warning "Errors found! Error Log: $error_log"
+        Write-Output "[[General]] Errors found. Log: $error_log" | Tee-Object -Append $success_log | Tee-Object -Append $error_log
         $error_count++
         
         $attempt_count--
         if($attempt_count -gt 0) {
-            Write-Output "Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
+            Write-Output "[[Retry]] Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
         }
         else {
-            Write-Output "Retry limit has been reached. No more attempts to backup will be made." | Tee-Object -Append $success_log
+            Write-Output "[[Retry]] Retry limit has been reached. No more attempts to backup will be made." | Tee-Object -Append $success_log
         }
         if($internet_available -eq $true) {
             Invoke-HistoryCheck $success_log $error_log
