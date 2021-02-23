@@ -1,16 +1,33 @@
 # Changelog
 
-## [1.2.1](https://github.com/kmwoley/restic-windows-backup/tree/HEAD) (2020-06-08)
+## [1.3](https://github.com/kmwoley/restic-windows-backup/tree/HEAD)
 
-[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.1...HEAD)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.2.1...HEAD)
 
-* Fix/improve internet connectivity checks for azure: gs: b2:
-* Internet connectivity test now supports more repository types (s3:, sftp:, rest:, azure:, gs:), and ignores unsupported (swift:, rclone: and local) 
-* Add 32-bit support in the `install.ps1`
-
+Improvements for Restic 0.12 and additional error logging.
 
 **Closed issues:**
 
+- Restic + rclone errors [\#26](https://github.com/kmwoley/restic-windows-backup/issues/26)
+- FYI: Restic now has built-in VSS support [\#23](https://github.com/kmwoley/restic-windows-backup/issues/23)
+- SFTP backup [\#22](https://github.com/kmwoley/restic-windows-backup/issues/22)
+- Dirrectory/Folder Backup [\#21](https://github.com/kmwoley/restic-windows-backup/issues/21)
+- Docker format [\#20](https://github.com/kmwoley/restic-windows-backup/issues/20)
+- Filtering out errors before deciding to retry ? [\#19](https://github.com/kmwoley/restic-windows-backup/issues/19)
+- Backup task stucked [\#18](https://github.com/kmwoley/restic-windows-backup/issues/18)
+
+## [1.2.1](https://github.com/kmwoley/restic-windows-backup/tree/1.2.1) (2020-06-08)
+
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.1...1.2.1)
+
+* Internet connectivity test now supports more repository types (s3:, sftp:, rest:, azure:, gs:), and ignores unsupported (swift:, rclone: and local) 
+* Add 32-bit support in the `install.ps1`
+
+* Fix/improve internet connectivity checks for azure: gs: b2:
+
+**Closed issues:**
+
+- azure repo could not be parsed [\#15](https://github.com/kmwoley/restic-windows-backup/issues/15)
 - Need to strip rest: in addition to s3: from RESTIC\_REPOSITORY [\#14](https://github.com/kmwoley/restic-windows-backup/issues/14)
 - Use non-s3 repos [\#10](https://github.com/kmwoley/restic-windows-backup/issues/10)
 - Test-Connection fails [\#9](https://github.com/kmwoley/restic-windows-backup/issues/9)
@@ -19,6 +36,7 @@
 
 **Merged pull requests:**
 
+- Release 1 3 [\#17](https://github.com/kmwoley/restic-windows-backup/pull/17) ([kmwoley](https://github.com/kmwoley))
 - 1.2 Release [\#13](https://github.com/kmwoley/restic-windows-backup/pull/13) ([kmwoley](https://github.com/kmwoley))
 
 ## [1.1](https://github.com/kmwoley/restic-windows-backup/tree/1.1) (2020-02-15)
