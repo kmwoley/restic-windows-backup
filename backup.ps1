@@ -76,7 +76,7 @@ function Invoke-Maintenance {
     # prune (remove) data from the backup step. Running this separate from `forget` because
     #   `forget` only prunes when it detects removed snapshots upon invocation, not previously removed
     Write-Output "[[Maintenance]] Start pruning..." | Tee-Object -Append $SuccessLog
-    & $ResticExe prune 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
+    & $ResticExe prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
     if(-not $?) {
         Write-Output "[[Maintenance]] Prune operation completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
         $maintenance_success = $false
