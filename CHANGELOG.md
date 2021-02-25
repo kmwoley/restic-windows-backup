@@ -1,20 +1,51 @@
 # Changelog
 
-## [1.3](https://github.com/kmwoley/restic-windows-backup/tree/HEAD)
+## [1.4](https://github.com/kmwoley/restic-windows-backup/tree/1.4) (2021-02-24)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.3...HEAD)
 
-[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.2.1...HEAD)
+Moved to using Restic's inbuilt filesystem shadow copy creation (VSS).
+
+## Breaking Change
+`local.exclude` file changes that previously referenced the `resticVSS` directory will need to be changed to `C:\` or the relevant root drive letter.
+
+## Other enhancements
+- Future snapshot grouping (and cleanup) will be better since the root-level folders included in the backup won't change (instead, the script targets the root drive letter instead of a list of folders under the drive letter).
+- Added the ability to set prune parameters via `.\config.ps1`, and defaulted the settings to `--group-by host` to clean up the aforementioned snapshot grouping & pruning.
+- Updated the `windows.exclude` to include additional directories (most notably, the Recycle Bin is no longer backed up) 
+
+**Closed issues:**
+
+- Remove VSS Operations, Switch to `--use-fs-snapshot` [\#32](https://github.com/kmwoley/restic-windows-backup/issues/32)
+- powershell execution policy is blocking the scheduled task [\#27](https://github.com/kmwoley/restic-windows-backup/issues/27)
+- VSS Cleanup Upon Errors [\#8](https://github.com/kmwoley/restic-windows-backup/issues/8)
+
+**Merged pull requests:**
+
+- Release 1.4 [\#33](https://github.com/kmwoley/restic-windows-backup/pull/33) ([kmwoley](https://github.com/kmwoley))
+
+## [1.3](https://github.com/kmwoley/restic-windows-backup/tree/1.3) (2021-02-23)
+
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.2.1...1.3)
 
 Improvements for Restic 0.12 and additional error logging.
 
 **Closed issues:**
 
+- backup errors after update to restic 0.12.0 due to --quiet and --verbose being used simultaneously [\#29](https://github.com/kmwoley/restic-windows-backup/issues/29)
 - Restic + rclone errors [\#26](https://github.com/kmwoley/restic-windows-backup/issues/26)
+- E-Mail sending errors are not logged [\#25](https://github.com/kmwoley/restic-windows-backup/issues/25)
 - FYI: Restic now has built-in VSS support [\#23](https://github.com/kmwoley/restic-windows-backup/issues/23)
 - SFTP backup [\#22](https://github.com/kmwoley/restic-windows-backup/issues/22)
 - Dirrectory/Folder Backup [\#21](https://github.com/kmwoley/restic-windows-backup/issues/21)
 - Docker format [\#20](https://github.com/kmwoley/restic-windows-backup/issues/20)
 - Filtering out errors before deciding to retry ? [\#19](https://github.com/kmwoley/restic-windows-backup/issues/19)
 - Backup task stucked [\#18](https://github.com/kmwoley/restic-windows-backup/issues/18)
+
+**Merged pull requests:**
+
+- Release 1.4 [\#31](https://github.com/kmwoley/restic-windows-backup/pull/31) ([kmwoley](https://github.com/kmwoley))
+- Add '-ExecutionPolicy Bypass' to the task scheduler arguments to avoi… [\#28](https://github.com/kmwoley/restic-windows-backup/pull/28) ([scelfo](https://github.com/scelfo))
+- Fix URI parsing [\#24](https://github.com/kmwoley/restic-windows-backup/pull/24) ([Phlogi](https://github.com/Phlogi))
 
 ## [1.2.1](https://github.com/kmwoley/restic-windows-backup/tree/1.2.1) (2020-06-08)
 
