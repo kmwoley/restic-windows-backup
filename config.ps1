@@ -12,7 +12,8 @@ $GlobalRetryAttempts = 4
 
 # maintenance configuration
 $SnapshotMaintenanceEnabled = $true
-$SnapshotRetentionPolicy = @("--keep-daily", "30", "--keep-weekly", "52", "--keep-monthly", "24", "--keep-yearly", "10")
+$SnapshotRetentionPolicy = @("--group-by", "host", "--keep-daily", "30", "--keep-weekly", "52", "--keep-monthly", "24", "--keep-yearly", "10")
+$SnapshotPrunePolicy = @("--max-unused", "1%")
 $SnapshotMaintenanceInterval = 7
 $SnapshotMaintenanceDays = 30
 $SnapshotDeepMaintenanceDays = 90;

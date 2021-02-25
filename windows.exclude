@@ -1,23 +1,25 @@
 # default excludes
 # examples https://github.com/duplicati/duplicati/blob/master/Duplicati/Library/Utility/FilterGroups.cs
-# note, because we're using a VSS directory, we can use that as the root dir for exclude rules (i.e. resticVSS)
-resticVSS\hiberfil.sys
-resticVSS\pagefile.sys
-resticVSS\swapfile.sys
-resticVSS\$Recycle.Bin
-resticVSS\autoexec.bat
-resticVSS\Config.Msi
-resticVSS\Documents and Settings
-resticVSS\Recycled
-resticVSS\Recycler
-resticVSS\System Volume Information
-resticVSS\Recovery
-resticVSS\Program Files
-resticVSS\Program Files (x86)
-resticVSS\ProgramData
-resticVSS\PerfLogs
-resticVSS\Windows
-resticVSS\Windows.old
+C:\hiberfil.sys
+C:\pagefile.sys
+C:\swapfile.sys
+C:\$Recycle.Bin
+C:\autoexec.bat
+C:\Config.Msi
+C:\Documents and Settings
+C:\Recycled
+C:\Recycler
+C:\$$Recycle.Bin
+C:\System Volume Information
+C:\Recovery
+C:\Program Files
+C:\Program Files (x86)
+C:\ProgramData
+C:\PerfLogs
+C:\Windows
+C:\Windows.old
+C:\$$WINDOWS.~BT
+C:\$$WinREAgent
 Microsoft\Windows\Recent
 Microsoft\**\RecoveryStore*
 Microsoft\**\Windows\*.edb
@@ -32,7 +34,7 @@ UsrClass.dat
 Dropbox
 AppData\Local\Google\Drive
 Google Drive\.tmp.drivedownload
-resticVSS\OneDriveTemp
+C:\OneDriveTemp
 
 # browsers
 Google\Chrome
