@@ -1,6 +1,8 @@
 . .\config.ps1
 . .\secrets.ps1
 
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 # download restic
 if(-not (Test-Path $ResticExe)) {
     $url = $null
