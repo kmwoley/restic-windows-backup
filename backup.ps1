@@ -140,7 +140,7 @@ function Invoke-Backup {
         # Build the new list of folders from settings (if there are any)
         $folder_list = New-Object System.Collections.Generic.List[System.Object]
         ForEach ($path in $item.Value) {
-            $p = '"{0}"' -f ((Join-Path $root_path $path) -replace "\\$", "")
+            $p = '"{0}"' -f ((Join-Path $root_path $path) -replace "\\$")
             $folder_list.Add($p)
         }
 
