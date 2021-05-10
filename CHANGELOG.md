@@ -1,7 +1,19 @@
 # Changelog
 
+## [1.4.1](https://github.com/kmwoley/restic-windows-backup/tree/1.4.1) (2021-05-29)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.4...1.4.1)
+
+Bugfix release.
+
+## Fixes
+- Improved URL parsing so that the internet connectivity check works if the URL doesn't provide a protocol
+- Add PowerShell 7.1 support to internet connectivity check
+
+## Enhancements
+- Setting $InternetTestAttempts to 0 will now bypass the internet connectivity checks entirely
+
 ## [1.4](https://github.com/kmwoley/restic-windows-backup/tree/1.4) (2021-02-24)
-[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.3...HEAD)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.3...1.4)
 
 Moved to using Restic's inbuilt filesystem shadow copy creation (VSS).
 
