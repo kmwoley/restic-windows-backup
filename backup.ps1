@@ -266,7 +266,7 @@ function Invoke-ConnectivityCheck {
             Write-Output "[[Internet]] Waiting for internet connectivity... $sleep_count" | Tee-Object -Append $SuccessLog
             Start-Sleep 30
         }
-        elseif(!(Test-Connection -Server $repository_host -Quiet)) {
+        elseif(!(Test-Connection -ComputerName $repository_host -Quiet)) {
             Write-Output "[[Internet]] Waiting for connection to repository ($repository_host)... $sleep_count" | Tee-Object -Append $SuccessLog
             Start-Sleep 30
         }
