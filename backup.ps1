@@ -209,9 +209,15 @@ function Send-Email {
 
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
+    
+    if($InternetTestAttempts -le 0) {
+        Write-Output "[[Internet]] Internet connectivity check disabled. Skipping." | Tee-Object -Append $SuccessLog    
+        return $true
+    }
+
     # skip the internet connectivity check for local repos
     if(Test-Path $env:RESTIC_REPOSITORY) {
-        Write-Output "[[Internet]] Skipping internet connectivity check." | Tee-Object -Append $SuccessLog    
+        Write-Output "[[Internet]] Local repository. Skipping internet connectivity check." | Tee-Object -Append $SuccessLog    
         return $true
     }
 
@@ -233,9 +239,13 @@ function Invoke-ConnectivityCheck {
     }
     else {
         # parse connection string for hostname
-        #   Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:)
+        # Uri parser doesn't handle leading connection type info (s3:, sftp:, rest:)
         $connection_string = $env:RESTIC_REPOSITORY -replace "^s3:" -replace "^sftp:" -replace "^rest:"
-        $repository_host = ([System.Uri]$connection_string).host
+        if(-not ($connection_string -match "://")) {
+            # Uri parser expects to have a protocol. Add 'https://' to make it parse correctly.
+            $connection_string = "https://" + $connection_string
+        }
+        $repository_host = ([System.Uri]$connection_string).DnsSafeHost
     }
 
     if([string]::IsNullOrEmpty($repository_host)) {
