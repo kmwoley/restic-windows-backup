@@ -17,6 +17,51 @@ $Script:ResticStateRepositoryInitialized = $null
 $Script:ResticStateLastMaintenance = $null
 $Script:ResticStateLastDeepMaintenance = $null
 $Script:ResticStateMaintenanceCounter = $null
+ 
+# Returns all drive letters which exactly match the serial number, drive label, or drive name of 
+# the input parameter. Returns all drives if no input parameter is provided.
+# inspiration: https://stackoverflow.com/questions/31088930/combine-get-disk-info-and-logicaldisk-info-in-powershell
+function Get-Drives {
+    Param($ID)
+
+    foreach($disk in Get-CimInstance Win32_Diskdrive) {
+        $diskMetadata = Get-Disk | Where-Object { $_.Number -eq $disk.Index } | Select-Object -First 1
+        $partitions = Get-CimAssociatedInstance -ResultClassName Win32_DiskPartition -InputObject $disk
+
+        foreach($partition in $partitions) {
+
+            $drives = Get-CimAssociatedInstance -ResultClassName Win32_LogicalDisk -InputObject $partition
+
+            foreach($drive in $drives) {
+                    
+                $volume = Get-Volume |
+                          Where-Object { $_.DriveLetter -eq $drive.DeviceID.Trim(":") } |
+                          Select-Object -First 1
+
+                if(($diskMetadata.SerialNumber.trim() -eq $ID) -or 
+                    ($disk.Caption -eq $ID) -or
+                    ($volume.FileSystemLabel  -eq $ID) -or
+                    ($null -eq $ID)) {
+    
+                    [PSCustomObject] @{
+                        DriveLetter   = $drive.DeviceID
+                        Number        = $disk.Index
+                        Label         = $volume.FileSystemLabel
+                        Manufacturer  = $diskMetadata.Manufacturer
+                        Model         = $diskMetadata.Model
+                        SerialNumber  = $diskMetadata.SerialNumber.trim()
+                        Name          = $disk.Caption
+                        FileSystem    = $volume.FileSystem
+                        PartitionKind = $diskMetadata.PartitionStyle
+                        Drive         = $drive
+                        Partition     = $partition
+                        Disk          = $disk
+                    }
+                }
+            }
+        }
+    }
+}
 
 # restore backup state from disk
 function Get-BackupState {
@@ -123,19 +168,39 @@ function Invoke-Backup {
 
     Write-Output "[[Backup]] Start $(Get-Date)" | Tee-Object -Append $SuccessLog
     $return_value = $true
-    $drive_count = $BackupSources.Count
     $starting_location = Get-Location
     ForEach ($item in $BackupSources.GetEnumerator()) {
 
-        # Get the source drive letter and set as the root path
+        # Get the source drive letter or identifier and set as the root path
         $root_path = $item.Key
+        $tag = $item.Key
 
-        # Avoid storing the drive letter in the backup path if only backing up a single drive
-        # FIXME: this doesn't really work. "C:\" still gets stored
-        if($drive_count -eq 1) {
-            Set-Location $root_path
-            $root_path = "."
+        $vss_option = "--use-fs-snapshot"
+
+        # Test if root path is a valid path, if not assume it is an external drive identifier
+        if(-not (Test-Path $root_path)) {
+            # attempt to find a drive letter associated with the identifier provided
+            $drives = Get-Drives $root_path
+            if($drives.Count -gt 1) {
+                Write-Output "[[Backup]] Fatal error - external drives with more than one partition are not currently supported." | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
+                return $false
+            }
+            elseif ($drives.Count -eq 0) {
+                # TODO: Silently fails if an entire drive is missing. This is good for occasionally mounted external drives, but bad for
+                #        drives that are always expected to be here. May want to make this an optional error.
+                Write-Output "[[Backup]] Warning - backup path $root_path not found." | Tee-Object -Append $SuccessLog #| Tee-Object -Append $ErrorLog
+                # $return_value = $false
+                continue
+            }
+            
+            $root_path = Join-Path $drives[0].DriveLetter ""
+            
+            # disable VSS / file system snapshot for external drives
+            # TODO: would be best to just test for VSS compatibility on the drive, rather than assume it won't work
+            $vss_option = $null
         }
+
+        Write-Output "[[Backup]] Start $(Get-Date) [$tag]" | Tee-Object -Append $SuccessLog
         
         # Build the new list of folders from settings (if there are any)
         $folder_list = New-Object System.Collections.Generic.List[System.Object]
@@ -150,11 +215,13 @@ function Invoke-Backup {
         }
 
         # Launch Restic
-        & $ResticExe backup $folder_list --use-fs-snapshot --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
+        & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
         if(-not $?) {
             Write-Output "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
             $return_value = $false
         }
+
+        Write-Output "[[Backup]] End $(Get-Date) [$tag]" | Tee-Object -Append $SuccessLog
     }
     
     Set-Location $starting_location
