@@ -5,14 +5,14 @@
 
 Added support for backing up removable drives (i.e. external USB disks). It's now possible to define a backup source by it's Volume label, device Serial Number, or the hardware Name. 
 
-**WARNING** If you have been previously backing up multiple drives, the default `forget` policy was likely pruning backup sets too agressively and could lead to data loss. You **must** update your `$SnapshotRetentionPolicy` to include `@("--group-by", "host,tags", ...` to avoid pruning an entire drive's contents inadvertently! 
+**WARNING** If you have been previously backing up multiple drives, the default `forget` policy was likely pruning backup sets too aggressively and could lead to data loss. You **must** update your `$SnapshotRetentionPolicy` to include `@("--group-by", "host,tags", ...` to avoid pruning an entire drive's contents inadvertently! 
 
 ## Fixes
 - Updated default snapshot forget/prune retention policy to group by "host,tags" to prevent major data loss. Only configurations with multiple `$BackupSources` are impacted by this change.
 - Added tags to each backup source to support grouping by tags. For existing backup sets, this change will result in a slightly longer backup the first time this updated script is run.
 
 ## Enhancements
-- External, removalbe disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]`. I would recommend using the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command.
+- External, removable disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]`. I would recommend using the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command.
 - Add the ability to $IgnoreMissingBackupSources. To make sure that errors are not thrown if the device is not present, there is now an option to ignore error reporting when a folder and entire backup source are missing. When `$true`, missing external drives or folders don't produce errors. When `$null` or `$false`, missing drives and/or folders result in an error. The default is set to `$false` as not to silently fail backing up a source.
 - Updated install script to download Restic 12.1
 
