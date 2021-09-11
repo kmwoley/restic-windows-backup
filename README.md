@@ -4,6 +4,7 @@ Simplifies the process of installation and running daily backups.
 
 # Features
 * **VSS (Volume Snapshot Service) support** - backup everything, don't worry about what files are open/in-use
+* **Removable, External Drives** - drives can be identified by their volume labels or serial numbers, making it easy to backup drives that occasionally aren't there or change drive letter.
 * **Easy Installation** - `install.ps1` script downloads Restic, initializes the restic repository, and setups up a Windows Task Scheduler task to run the backup daily
 * **Backup, Maintenance and Monitoring are Automated** - `backup.ps1` script handles
   * Emailing the results of each execution, including log files when there are problems
@@ -28,6 +29,9 @@ Simplifies the process of installation and running daily backups.
 1. Run `install.ps1` file
    1. From the elevated (Run as Administrator) Powershell window, run `.\install.ps1`
    1. This will initialize the repro, create your logfile directory, and create a scheduled task in Windows Task Scheduler to run the task daily.
+1. Add your `$BackupSources` to `config.ps1`
+   1. By default, all of `C:\` will be backed up. You can add multiple root drives to be backed up. And you can define only specific folders you would like backed up.
+   1. External, removalbe disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]=@()`. I would recommend using the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command. You may also want to set `$IgnoreMissingBackupSources=$true` to avoid seeing errors when the removable drive is not present.
 1. Add files/paths not to backup to `local.exclude`
    1. If you don't want to modify the included exclude file, you can add any files/paths you want to exclude from the backup to `local.exclude`
 1. Add `restic.exe` to the Windows Defender / Virus & Threat Detection Exclude list
