@@ -186,10 +186,15 @@ function Invoke-Backup {
                 return $false
             }
             elseif ($drives.Count -eq 0) {
-                # TODO: Silently fails if an entire drive is missing. This is good for occasionally mounted external drives, but bad for
-                #        drives that are always expected to be here. May want to make this an optional error.
-                Write-Output "[[Backup]] Warning - backup path $root_path not found." | Tee-Object -Append $SuccessLog #| Tee-Object -Append $ErrorLog
-                # $return_value = $false
+                $ignore_error = ($null -ne $IgnoreMissingBackupSources) -and $IgnoreMissingBackupSources
+                $warning_message = {Write-Output "[[Backup]] Warning - backup path $root_path not found."}
+                if($ignore_error) {
+                    & $warning_message | Tee-Object -Append $SuccessLog                    
+                }
+                else {
+                    & $warning_message | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
+                    $return_value = $false
+                }
                 continue
             }
             
@@ -202,23 +207,56 @@ function Invoke-Backup {
 
         Write-Output "[[Backup]] Start $(Get-Date) [$tag]" | Tee-Object -Append $SuccessLog
         
-        # Build the new list of folders from settings (if there are any)
+        # build the list of folders to backup
         $folder_list = New-Object System.Collections.Generic.List[System.Object]
-        ForEach ($path in $item.Value) {
-            $p = '"{0}"' -f ((Join-Path $root_path $path) -replace "\\$")
-            $folder_list.Add($p)
-        }
-
-        # backup everything in the root if no folders are provided
-        if (-not $folder_list) {
+        if ($item.Value.Count -eq 0) {
+            # backup everything in the root if no folders are provided
             $folder_list.Add($root_path)
         }
+        else {
+            # Build the list of folders from settings
+            ForEach ($path in $item.Value) {
+                $p = '"{0}"' -f ((Join-Path $root_path $path) -replace "\\$")
+                
+                if(Test-Path ($p -replace '"')) {
+                    # add the folder if it exists
+                    $folder_list.Add($p)
+                }
+                else {
+                    # if the folder doesn't exist, log a warning/error
+                    $ignore_error = ($null -ne $IgnoreMissingBackupSources) -and $IgnoreMissingBackupSources
+                    $warning_message = {Write-Output "[[Backup]] Warning - backup path $p not found."}
+                    if($ignore_error) {
+                        & $warning_message | Tee-Object -Append $SuccessLog
+                    }
+                    else {
+                        & $warning_message | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
+                        $return_value = $false
+                    }
+                }
+            }
 
-        # Launch Restic
-        & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
-        if(-not $?) {
-            Write-Output "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
-            $return_value = $false
+        }
+        
+        if(-not $folder_list) {
+            # there are no folders to backup
+            $ignore_error = ($null -ne $IgnoreMissingBackupSources) -and $IgnoreMissingBackupSources
+            $warning_message = {Write-Output "[[Backup]] Warning - no folders to back up!"}
+            if($ignore_error) {
+                & $warning_message | Tee-Object -Append $SuccessLog
+            }
+            else {
+                & $warning_message | Tee-Object -Append $SuccessLog | Tee-Object -Append $ErrorLog
+                $return_value = $false
+            }
+        }
+        else {
+            # Launch Restic
+            & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile 3>&1 2>> $ErrorLog | Tee-Object -Append $SuccessLog
+            if(-not $?) {
+                Write-Output "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog
+                $return_value = $false
+            }
         }
 
         Write-Output "[[Backup]] End $(Get-Date) [$tag]" | Tee-Object -Append $SuccessLog

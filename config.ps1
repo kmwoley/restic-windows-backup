@@ -9,6 +9,7 @@ $LogPath = Join-Path $InstallPath "logs"
 $LogRetentionDays = 30
 $InternetTestAttempts = 10
 $GlobalRetryAttempts = 4
+$IgnoreMissingBackupSources = $false
 
 # maintenance configuration
 $SnapshotMaintenanceEnabled = $true
