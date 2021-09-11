@@ -14,7 +14,7 @@ Added support for backing up removable drives (i.e. external USB disks). It's no
 ## Enhancements
 - External, removable disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]`. I would recommend using the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command.
 - Add the ability to $IgnoreMissingBackupSources. To make sure that errors are not thrown if the device is not present, there is now an option to ignore error reporting when a folder and entire backup source are missing. When `$true`, missing external drives or folders don't produce errors. When `$null` or `$false`, missing drives and/or folders result in an error. The default is set to `$false` as not to silently fail backing up a source.
-- Updated install script to download Restic 12.1
+- Updated install script to download Restic 0.12.1
 
 ## [1.4.1](https://github.com/kmwoley/restic-windows-backup/tree/1.4.1) (2021-05-29)
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.4...1.4.1)
