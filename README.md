@@ -20,7 +20,8 @@ Simplifies the process of installation and running daily backups.
    1. Download scripts from https://github.com/kmwoley/restic-windows-backup, and unzip them into `C:\restic`
    1. Launch PowerShell as Administrator
    1. Change your working directory to `C:\restic`
-   1. If you downloaded the files as a ZIP file, you may have to 'unblock' the execution of the scripts by running `Unblock-File *.ps1`
+   1. If you haven't done so in the past, set your Powershell script [execution policy](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7.1) to allow for scripts to run. For example, `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned` is a good default.
+   1. Depending on the policy you choose, may need to 'unblock' the execution of the scripts you download by running `Unblock-File *.ps1`
 1. Create `secrets.ps1` file
    1. The secrets file contains location and passwords for your restic repository.
    1. `secrets_template.ps1` is a template for the `secrets.ps1` file - copy or rename this file to `secrets.ps1` and edit.
