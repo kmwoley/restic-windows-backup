@@ -25,7 +25,7 @@ $SendEmailOnError = $true
 
 # healthchecks.io configuration
 $SendHealthcheck = $false
-$healthcheckURL = "<healthcheck.io URL>"
+$healthcheckURL = "<healthchecks.io URL>"
 
 # Paths to backup
 $BackupSources = @{}
