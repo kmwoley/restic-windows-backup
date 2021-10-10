@@ -134,7 +134,7 @@ function Invoke-Maintenance {
     $data_check = @()
     if($null -ne $ResticStateLastDeepMaintenance) {
         $delta = New-TimeSpan -Start $ResticStateLastDeepMaintenance -End $(Get-Date)
-        if($delta.Days -ge $SnapshotDeepMaintenanceDays) {
+        if(($null -ne $SnapshotDeepMaintenanceDays) -and ($delta.Days -ge $SnapshotDeepMaintenanceDays)) {
             Write-Output "[[Maintenance]] Performing full data check - deep '--read-data' check last ran $ResticStateLastDeepMaintenance ($($delta.Days) days ago)" | Tee-Object -Append $SuccessLog
             $data_check = @("--read-data")
             $Script:ResticStateLastDeepMaintenance = Get-Date
