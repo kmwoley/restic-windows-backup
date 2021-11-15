@@ -48,5 +48,22 @@ Simplifies the process of installation and running daily backups.
       1. `& $ResticExe find -i "*filename*"`
       1. `& $ResticExe restore ...`
 
+# Backup over SFTP
+
+You can use any restic repository type you like, but since a lot of issues are about failures to backup to SFTP here are the steps to get it working:
+
+1. Install as above. Your repository should be created properly. Tasked backups will fail for now though. This is because the install.ps1 file is executed with your user, whereas the tasked backup will run as SYSTEM, which does not have any ssh config yet
+1. Open Task Scheduler and make sure the restic task is not running anymore by checking the active tasks
+1. Edit config.ps1 and turn off the internet connection test: `$InternetTestAttempts = 0` as the test does not recognize sftp addresses correctly
+1. Copy the .ssh directory content from %USERPROFILE%\.ssh to %WINDIR%\System32\config\systemprofile\.ssh (This is the ssh config the SYSTEM account uses)
+1. If you use a private key to access the sftp services it also needs to be in this directory. ssh checks the permissions though, so they need to be changed as well:
+	1. *Right click your key > Properties > Security > Advanced*
+		1. Change the owner to SYSTEM
+		1. *Disable inheritance* and keep the permissions
+		1. Remove all principals except SYSTEM and the Administrators group 
+
+This should get you up and running. If not, download [PsExec](https://docs.microsoft.com/en-us/sysinternals/downloads/psexec), start a powershell as admin user and run `.\PsExec.exe -s -i powershell.exe`. In this shell you will be the system user and you can try things out. See what `ssh user@server` says or try `cd C:\restic\; . .\config.ps1; . .\secrets.ps1; & $ResticExe check` (If you get lock errors, remember to check the Task Scheduler for any running restic instances in the background) 
+
+
 # Feedback?
 Feel free to open issues or create PRs!
