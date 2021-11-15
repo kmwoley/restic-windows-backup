@@ -294,6 +294,16 @@ function Send-Email {
         $attachments = @{Attachments = $ErrorLog}
         $status = "ERROR"
     }
+	# Send notification to healthchecks.io if enabled
+	if($SendHealthcheck -ne $false) {
+		if($status -eq "SUCCESS") {
+			Invoke-RestMethod $healthcheckURL
+		}
+		else {
+			Invoke-RestMethod ($healthcheckURL + "/fail")
+		}
+	}
+	
     if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or ((($status -eq "ERROR") -or $success_after_failure) -and ($SendEmailOnError -ne $false))) {
         $subject = "$env:COMPUTERNAME Restic Backup Report [$status]"
 
@@ -415,6 +425,11 @@ function Invoke-Main {
         Send-Email
         exit
     }
+
+	# Send notification to healthchecks.io if enabled
+	if($SendHealthcheck -ne $false) {
+			Invoke-RestMethod ($healthcheckURL + "/start")
+	}
 
     $error_count = 0;
     $attempt_count = $GlobalRetryAttempts

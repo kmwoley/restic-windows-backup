@@ -23,6 +23,10 @@ $SnapshotDeepMaintenanceDays = 90;
 $SendEmailOnSuccess = $false
 $SendEmailOnError = $true
 
+# healthchecks.io configuration
+$SendHealthcheck = $false
+$healthcheckURL = "<healthchecks.io URL>"
+
 # Paths to backup
 $BackupSources = @{}
 $BackupSources["C:\"] = @(
