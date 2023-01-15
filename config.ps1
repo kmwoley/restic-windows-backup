@@ -18,7 +18,7 @@ $SnapshotRetentionPolicy = @("--group-by", "host,tags", "--keep-daily", "30", "-
 $SnapshotPrunePolicy = @("--max-unused", "1%")
 $SnapshotMaintenanceInterval = 7
 $SnapshotMaintenanceDays = 30
-$SnapshotDeepMaintenanceDays = 90;
+$SnapshotDeepMaintenanceDays = 90
 
 # email configuration
 $SendEmailOnSuccess = $false
