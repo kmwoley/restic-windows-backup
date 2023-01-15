@@ -169,6 +169,14 @@ function Invoke-Maintenance {
         $maintenance_success = $false
     }
 
+    # check for updated restic version
+    "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
+    & $ResticExe self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+    if(-not $?) {
+        "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+        $maintenance_success = $false
+    }
+
     "[[Maintenance]] End $(Get-Date)" | Out-File -Append $SuccessLog
     
     if($maintenance_success -eq $true) {
