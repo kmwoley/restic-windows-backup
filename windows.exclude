@@ -47,10 +47,6 @@ AppData\Local\ConnectedDevicesPlatform
 AppData\Local\Packages
 AppData\Roaming\Signal
 AppData\Local\ElevatedDiagnostics
-AppData\Local\Microsoft\Windows\Explorer
-AppData\Local\Microsoft\Windows\INetCache
-AppData\Local\Microsoft\Windows\WebCache
-AppData\Local\Microsoft\Windows Store
 AppData\Local\restic
 AppData\LocalLow\Microsoft\CryptnetUrlCache
 AppData\Local\IsolatedStorage

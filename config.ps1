@@ -10,6 +10,7 @@ $LogRetentionDays = 30
 $InternetTestAttempts = 10
 $GlobalRetryAttempts = 4
 $IgnoreMissingBackupSources = $false
+$AdditionalBackupParameters = @("--exclude-if-present", ".nobackup")
 
 # maintenance configuration
 $SnapshotMaintenanceEnabled = $true

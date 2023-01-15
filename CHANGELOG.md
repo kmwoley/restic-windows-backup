@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.6](https://github.com/kmwoley/restic-windows-backup/tree/1.6) (2023-01-14)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.5...1.6)
+
+Separated backup and maintenance execution loops, including sending separate emails for backup and maintenance reports. This allows for a maintenance failure not to cause a backup to be re-run, and vice-versa. This makes failures take a shorter time to resolve.	
+
+Logfiles now are formated as `*.backup.log.txt` and `*.maintenance.log.txt`
+
+## Fixes
+- Fixed issue #60, removing duplicate exclude lines
+- Fixed several errors where functions would return incorrect success/failure results due to PowerShell's return value semantics
+
+## Enhancements
+- Updated installer to download v 0.15.0
+- Installer will 'self-update' the Restic binary
+- Maintenance will 'self-update' the Restic binary
+- Added a configuration point for extra / additional parameters to be passed to the backup command (`$AdditionalBackupParameters`)
+	
 ## [1.5](https://github.com/kmwoley/restic-windows-backup/tree/1.5) (2021-09-11)
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.4.1...1.5)
 
