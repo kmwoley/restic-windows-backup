@@ -355,7 +355,8 @@ function Invoke-ConnectivityCheck {
     }
 
     # skip the internet connectivity check for local repos
-    if(Test-Path $env:RESTIC_REPOSITORY) {
+    if((Test-Path $env:RESTIC_REPOSITORY) -or 
+        ($env:RESTIC_REPOSITORY -match "^\\\\\w")) {
         "[[Internet]] Local repository. Skipping internet connectivity check." | Out-File -Append $SuccessLog    
         return $true
     }
