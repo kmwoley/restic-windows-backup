@@ -320,7 +320,7 @@ function Send-Email {
         }
     }
     else {
-        $body = "Crtical Error! Restic $Action log is empty or missing. Check log file path."
+        $body = "Critical Error! Restic $Action log is empty or missing. Check log file path."
         $status = "ERROR"
     }
     $attachments = @{}
