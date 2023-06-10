@@ -27,11 +27,13 @@ $SendEmailOnError = $true
 # Paths to backup
 $BackupSources = @{}
 $BackupSources["C:\"] = @(
-#    'Users'
+#    "Users\Example\Desktop\Source1",
+#    "Users\Example\Desktop\Source2"
 )
-#$BackupSources["D:\"] = @(
-#    'Software'
-#)
+$BackupSources["D:\"] = @(
+#    "Example\Source3",
+#    "Example\Source4"
+)
 #$BackupSources["DRIVE_LABEL_NAME_OR_SERIAL_NUMBER"] = @(
-#    'FolderName'
+#    "Example\FolderName"
 #)
