@@ -18,7 +18,9 @@ if(-not (Test-Path $ResticExe)) {
 }
 
 # Invoke restic self-update to check for a newer version
-& $ResticExe self-update
+if($AllowResticSelfUpdate -eq $true) {
+    & $ResticExe $SelfUpdateParameters self-update
+}
 
 # Create log directory if it doesn't exit
 if(-not (Test-Path $LogPath)) {
@@ -32,7 +34,7 @@ if(-not (Test-Path $LocalExcludeFile)) {
 }
 
 # Initialize the restic repository
-& $ResticExe --verbose init
+& $ResticExe $AdditionalParameters --verbose init
 if($?) {
     Write-Output "[[Init]] Repository successfully initialized."
 }

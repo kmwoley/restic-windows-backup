@@ -79,10 +79,10 @@ function Set-BackupState {
 function Invoke-Unlock {
     Param($SuccessLog, $ErrorLog)
 
-    $locks = & $ResticExe list locks --no-lock -q 3>&1 2>> $ErrorLog
+    $locks = & $ResticExe $AdditionalParameters list locks --no-lock -q 3>&1 2>> $ErrorLog
     if($locks.Length -gt 0) {
         # unlock the repository (assumes this machine is the only one that will ever use it)
-        & $ResticExe unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+        & $ResticExe $AdditionalParameters unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
         "[[Unlock]] Repository was locked. Unlocking." | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         Start-Sleep 120 
     }
@@ -127,7 +127,7 @@ function Invoke-Maintenance {
 
     # forget snapshots based upon the retention policy
     "[[Maintenance]] Start forgetting..." | Out-File -Append $SuccessLog
-    & $ResticExe forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+    & $ResticExe $AdditionalParameters forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
     if(-not $?) {
         "[[Maintenance]] Forget operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -136,7 +136,7 @@ function Invoke-Maintenance {
     # prune (remove) data from the backup step. Running this separate from `forget` because
     #   `forget` only prunes when it detects removed snapshots upon invocation, not previously removed
     "[[Maintenance]] Start pruning..." | Out-File -Append $SuccessLog
-    & $ResticExe prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+    & $ResticExe $AdditionalParameters prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
     if(-not $?) {
         "[[Maintenance]] Prune operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -163,21 +163,23 @@ function Invoke-Maintenance {
         $Script:ResticStateLastDeepMaintenance = Get-Date
     }
 
-    & $ResticExe check @data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+    & $ResticExe $AdditionalParameters check @data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
     if(-not $?) {
         "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
     }
 
-    # check for updated restic version
-    "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
-    & $ResticExe self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
-    if(-not $?) {
-        "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
-        $maintenance_success = $false
-    }
+    if($AllowResticSelfUpdate -eq $true) {
+        # check for updated restic version
+        "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
+        & $ResticExe $SelfUpdateParameters self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+        if(-not $?) {
+            "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+            $maintenance_success = $false
+        }
 
-    "[[Maintenance]] End $(Get-Date)" | Out-File -Append $SuccessLog
+        "[[Maintenance]] End $(Get-Date)" | Out-File -Append $SuccessLog
+    }
     
     if($maintenance_success -eq $true) {
         $Script:ResticStateLastMaintenance = Get-Date
@@ -278,7 +280,7 @@ function Invoke-Backup {
         }
         else {
             # Launch Restic
-            & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+            & $ResticExe $AdditionalParameters backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
             if(-not $?) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
                 $return_value = $false
