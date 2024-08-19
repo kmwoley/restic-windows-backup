@@ -1,3 +1,5 @@
+using module Send-MailKitMessage;
+
 #
 # Restic Windows Backup Script
 #
@@ -334,7 +336,15 @@ function Send-Email {
         # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
         $temp_error_log = $ErrorLog + "_temp"
 
-        Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
+        #sender ([MimeKit.MailboxAddress] http://www.mimekit.net/docs/html/T_MimeKit_MailboxAddress.htm, required)
+        $From = [MimeKit.MailboxAddress]$ResticEmailFrom;
+        $RecipientList = [MimeKit.InternetAddressList]::new();
+        $RecipientList.Add([MimeKit.InternetAddress]$ResticEmailTo);
+        $Port = 465
+        #authentication ([System.Management.Automation.PSCredential], optional)
+        $Credential = [System.Management.Automation.PSCredential]::new($ResticEmailFrom, (ConvertTo-SecureString -String $ResticEmailPassword -AsPlainText -Force));
+#send message
+        Send-MailKitMessage -SMTPServer $PSEmailServer -Port $Port -Credential $Credential -From $From -RecipientList $RecipientList -Subject $subject -TextBody $body 3>&1 2>> $temp_error_log    
 
         if(-not $?) {
             "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog

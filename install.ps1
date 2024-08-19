@@ -1,6 +1,11 @@
 . .\config.ps1
 . .\secrets.ps1
 
+# install Mailkit module
+Register-PSRepository -Default -InstallationPolicy Trusted
+Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+Install-Module Send-MailKitMessage
+
 # download restic
 if(-not (Test-Path $ResticExe)) {
     $url = $null
@@ -59,5 +64,4 @@ if($null -eq $backup_task) {
 else {
     Write-Warning "[[Scheduler]] Backup task not scheduled: there is already a task with the name '$backup_task_name'."
 }
-
-
+    
