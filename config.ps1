@@ -11,6 +11,8 @@ $InternetTestAttempts = 10
 $GlobalRetryAttempts = 4
 $IgnoreMissingBackupSources = $false
 $AdditionalBackupParameters = @("--exclude-if-present", ".nobackup")
+#$ResticEnvExports = @{"RESTIC_PROGRESS_FPS" = "0.01666"}
+#$ResticBackupFlags = @("--limit-upload", "51200") #50Mb/sec upload rate limit
 
 # maintenance configuration
 $SnapshotMaintenanceEnabled = $true

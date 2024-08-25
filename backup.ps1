@@ -194,6 +194,13 @@ function Invoke-Backup {
     "[[Backup]] Start $(Get-Date)" | Out-File -Append $SuccessLog
     $return_value = $true
     $starting_location = Get-Location
+
+    If ($ResticEnvExports.count -gt 0) {
+	    ForEach ($key in $ResticEnvExports.Keys) {
+	        Set-Item -Path env:$key -Value $ResticEnvExports[$key]
+	    }
+    }
+
     ForEach ($item in $BackupSources.GetEnumerator()) {
 
         # Get the source drive letter or identifier and set as the root path
@@ -278,8 +285,8 @@ function Invoke-Backup {
         }
         else {
             # Launch Restic
-            & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
-            if(-not $?) {
+            & $ResticExe backup $ResticBackupFlags $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+			if(-not $?) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
                 $return_value = $false
             }
