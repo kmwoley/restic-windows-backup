@@ -277,6 +277,9 @@ function Invoke-Backup {
             }
         }
         else {
+            # fix argument passing for pwsh v7.3+
+            $PSNativeCommandArgumentPassing = 'Legacy'
+            
             # Launch Restic
             & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
             if(-not $?) {
