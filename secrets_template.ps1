@@ -13,6 +13,5 @@ $PSEmailServer='<SMTP SERVER>'
 $ResticEmailConfig=@{UseSsl=$true; Port="587"}
 $ResticEmailTo='<DESTINATION EMAIL ADDRESS>'
 $ResticEmailFrom='<FROM EMAIL ADDRESS>'
-# comment the two lines below if your smtp host does not require authentication
-$ResticEmailUsername='<EMAIL LOGIN USERNAME>'
-$ResticEmailPassword='<EMAIL PASSWORD>'
+$ResticEmailUsername='<EMAIL LOGIN USERNAME OR EMPTY FOR NO USERNAME>'
+$ResticEmailPassword='<EMAIL PASSWORD OR EMPTY FOR NO PASSWORD>'

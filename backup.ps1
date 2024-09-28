@@ -194,13 +194,6 @@ function Invoke-Backup {
     "[[Backup]] Start $(Get-Date)" | Out-File -Append $SuccessLog
     $return_value = $true
     $starting_location = Get-Location
-
-    If ($ResticEnvExports.count -gt 0) {
-	    ForEach ($key in $ResticEnvExports.Keys) {
-	        Set-Item -Path env:$key -Value $ResticEnvExports[$key]
-	    }
-    }
-
     ForEach ($item in $BackupSources.GetEnumerator()) {
 
         # Get the source drive letter or identifier and set as the root path
@@ -285,8 +278,8 @@ function Invoke-Backup {
         }
         else {
             # Launch Restic
-            & $ResticExe backup $ResticBackupFlags $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
-			if(-not $?) {
+            & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+            if(-not $?) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
                 $return_value = $false
             }
@@ -309,12 +302,11 @@ function Send-Email {
         $Action = "Backup"
     }
 
-    if (($null -ne $ResticEmailUsername) -And ($null -ne $ResticEmailPassword)) {
+    if ([String]::IsNullOrEmpty($ResticEmailPassword)) {
+        $ResticEmailCredentials = @{}
+    } else {
         $password = ConvertTo-SecureString $ResticEmailPassword -AsPlainText -Force
-        $credentials = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)
-    }
-    else {
-        $credentials = $null
+        $ResticEmailCredentials = @{Credential = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)}
     }
 
     $status = "SUCCESS"
@@ -346,12 +338,7 @@ function Send-Email {
         # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
         $temp_error_log = $ErrorLog + "_temp"
 
-	if ($null -ne $credentials) {
-            Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
-    }
-    else {
-            Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
-	}
+        Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo @ResticEmailCredentials -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
 
         if(-not $?) {
             "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog
