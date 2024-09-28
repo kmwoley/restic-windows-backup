@@ -309,8 +309,13 @@ function Send-Email {
         $Action = "Backup"
     }
 
-    $password = ConvertTo-SecureString $ResticEmailPassword -AsPlainText -Force
-    $credentials = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)
+    if (($null -ne $ResticEmailUsername) -And ($null -ne $ResticEmailPassword)) {
+        $password = ConvertTo-SecureString $ResticEmailPassword -AsPlainText -Force
+        $credentials = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)
+    }
+    else {
+        $credentials = $null
+    }
 
     $status = "SUCCESS"
     $past_failure = $false
@@ -341,7 +346,12 @@ function Send-Email {
         # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
         $temp_error_log = $ErrorLog + "_temp"
 
-        Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
+	if ($null -ne $credentials) {
+            Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Credential $credentials -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
+    }
+    else {
+            Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
+	}
 
         if(-not $?) {
             "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog
