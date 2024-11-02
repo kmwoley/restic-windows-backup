@@ -60,4 +60,5 @@ else {
     Write-Warning "[[Scheduler]] Backup task not scheduled: there is already a task with the name '$backup_task_name'."
 }
 
-
+# Install Send-MailKitMessage module
+Install-Module Send-MailKitMessage -Repository PSGallery -Scope AllUsers
