@@ -4,3 +4,4 @@ restic.exe
 secrets.ps1
 state.xml
 testing
+restic.exe.bak
