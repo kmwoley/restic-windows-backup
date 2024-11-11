@@ -242,7 +242,7 @@ function Invoke-Backup {
         else {
             # Build the list of folders from settings
             ForEach ($path in $item.Value) {
-                $p = '"{0}"' -f ((Join-Path $root_path $path) -replace "\\$")
+                $p = '{0}' -f ((Join-Path $root_path $path) -replace "\\$")
                 
                 if(Test-Path ($p -replace '"')) {
                     # add the folder if it exists
@@ -278,7 +278,7 @@ function Invoke-Backup {
         }
         else {
             # Launch Restic
-            & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+            & $ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
             if(-not $?) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
                 $return_value = $false
