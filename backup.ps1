@@ -416,6 +416,15 @@ function Invoke-ConnectivityCheck {
     }
 }
 
+# check if on metered network
+function Invoke-MeteredCheck {
+
+    [void][Windows.Networking.Connectivity.NetworkInformation, Windows, ContentType = WindowsRuntime]
+    
+    $cost = [Windows.Networking.Connectivity.NetworkInformation]::GetInternetConnectionProfile().GetConnectionCost()
+    $cost.ApproachingDataLimit -or $cost.OverDataLimit -or $cost.Roaming -or $cost.BackgroundDataUsageRestricted -or ($cost.NetworkCostType -ne "Unrestricted")
+}
+
 # check previous logs
 function Invoke-HistoryCheck {
     Param($SuccessLog, $ErrorLog, $Action)
@@ -470,23 +479,30 @@ function Invoke-Main {
         $error_log = Join-Path $LogPath ($timestamp + ".backup.err.txt")
         
         $repository_available = Invoke-ConnectivityCheck $success_log $error_log
-        if($repository_available -eq $true) { 
-            Invoke-Unlock $success_log $error_log
-            $backup_success = Invoke-Backup $success_log $error_log
+        if($repository_available -eq $true) {
+            $metered_network = Invoke-MeteredCheck
+            if ($BackupOnMeteredNetwork -eq $true -or $metered_network -eq $false) {
+                Invoke-Unlock $success_log $error_log
+                $backup_success = Invoke-Backup $success_log $error_log
 
-            # NOTE: a previously locked repository will cause errors in the log; but backup would be 'successful'
-            # Removing this overly-aggressive test for backup success and relying upon Invoke-Backup to report on success/failure
-            # $backup_success = ($backup_success -eq $true) -and (!(Test-Path $error_log) -or ((Get-Item $error_log).Length -eq 0))
-            $total_attempts = $GlobalRetryAttempts - $attempt_count + 1
-            if($backup_success -eq $true) {
-                # successful backup
-                Write-Output "[[Backup]] Succeeded after $total_attempts attempt(s)" | Tee-Object -Append $success_log
+                # NOTE: a previously locked repository will cause errors in the log; but backup would be 'successful'
+                # Removing this overly-aggressive test for backup success and relying upon Invoke-Backup to report on success/failure
+                # $backup_success = ($backup_success -eq $true) -and (!(Test-Path $error_log) -or ((Get-Item $error_log).Length -eq 0))
+                $total_attempts = $GlobalRetryAttempts - $attempt_count + 1
+                if($backup_success -eq $true) {
+                    # successful backup
+                    Write-Output "[[Backup]] Succeeded after $total_attempts attempt(s)" | Tee-Object -Append $success_log
 
-                # test to see if maintenance is needed if the backup was successful
-                $maintenance_needed = Test-Maintenance $success_log $error_log
+                    # test to see if maintenance is needed if the backup was successful
+                    $maintenance_needed = Test-Maintenance $success_log $error_log
+                }
+                else {
+                    Write-Output "[[Backup]] Ran with errors on attempt $total_attempts" | Tee-Object -Append $success_log | Tee-Object -Append $error_log
+                    $error_count++
+                }
             }
             else {
-                Write-Output "[[Backup]] Ran with errors on attempt $total_attempts" | Tee-Object -Append $success_log | Tee-Object -Append $error_log
+                Write-Output "[[Backup]] Failed - currently on metered connection." | Tee-Object -Append $success_log | Tee-Object -Append $error_log
                 $error_count++
             }
         }
