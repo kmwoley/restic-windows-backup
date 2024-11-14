@@ -10,7 +10,7 @@ $LogRetentionDays = 30
 $InternetTestAttempts = 10
 $GlobalRetryAttempts = 4
 $IgnoreMissingBackupSources = $false
-$AdditionalBackupParameters = @("--exclude-if-present", ".nobackup")
+$AdditionalBackupParameters = @("--exclude-if-present", ".nobackup", "--no-scan")
 
 # maintenance configuration
 $SnapshotMaintenanceEnabled = $true
@@ -30,10 +30,10 @@ $BackupSources["C:\"] = @(
 #    "Users\Example\Desktop\Source1",
 #    "Users\Example\Desktop\Source2"
 )
-$BackupSources["D:\"] = @(
+# $BackupSources["D:\"] = @(
 #    "Example\Source3",
 #    "Example\Source4"
-)
+# )
 #$BackupSources["DRIVE_LABEL_NAME_OR_SERIAL_NUMBER"] = @(
 #    "Example\FolderName"
 #)
