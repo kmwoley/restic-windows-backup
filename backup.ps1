@@ -313,6 +313,21 @@ function Send-Email {
         }
     }
 
+    # Backwards compatability for $ResticEmailConfig port definition:
+    # $ResticEmailConfig is obsolete and should be replaced with $ResticEmailPort
+    if ($null -ne $ResticEmailConfig -and $ResticEmailConfig.ContainsKey('Port')) {
+        if ($null -eq $ResticEmailPort) {
+            $ResticEmailPort = $ResticEmailConfig['Port']
+            '[[Email]] Warning - $ResticEmailConfig is deprecated. Define $ResticEmailPort in secrets.ps1 instead.' | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+        }
+    }
+
+    # Backwards compatibility for $PSEmailServer rename to $ResticEmailServer
+    if (($null -ne $PSEmailServer) -and ($null -eq $ResticEmailServer)) {
+        $ResticEmailServer = $PSEmailServer
+        '[[Email]] Warning - $PSEmailServer is deprecated. Define $ResticEmailServer in secrets.ps1 instead.' | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+    }
+
     $status = "SUCCESS"
     $past_failure = $false
     $body = ""
@@ -342,15 +357,7 @@ function Send-Email {
         # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
         $temp_error_log = $ErrorLog + "_temp"
 
-        # Backwards compatability for $ResticEmailConfig port definition:
-        # $ResticEmailConfig is obsolete and should be replaced with $PSEmailPort
-        if ($null -ne $ResticEmailConfig -and $ResticEmailConfig.ContainsKey('Port')) {
-            if ($null -eq $PSEmailPort) {
-                $PSEmailPort = $ResticEmailConfig['Port']
-            }
-        }
-
-        Send-MailKitMessage -SMTPServer $PSEmailServer -Port $PSEmailPort -UseSecureConnectionIfAvailable @credentials -From $ResticEmailFrom -RecipientList $ResticEmailTo -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log | Out-File -Append $SuccessLog
+        Send-MailKitMessage -SMTPServer $ResticEmailServer -Port $ResticEmailPort -UseSecureConnectionIfAvailable @credentials -From $ResticEmailFrom -RecipientList $ResticEmailTo -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log | Out-File -Append $SuccessLog
 
         if(-not $?) {
             "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog

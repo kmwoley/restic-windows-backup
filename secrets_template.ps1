@@ -9,8 +9,8 @@ $Env:RESTIC_REPOSITORY='<REPO URL>'
 $Env:RESTIC_PASSWORD='<BACKUP PASSWORD>'
 
 # email configuration
-$PSEmailServer='<SMTP SERVER>'
-$PSEmailPort=25
+$ResticEmailServer='<SMTP SERVER>'
+$ResticEmailPort='<SMTP PORT NUMBER, i.e. 25 or 587>'
 $ResticEmailTo='<DESTINATION EMAIL ADDRESS>'
 $ResticEmailFrom='<FROM EMAIL ADDRESS>'
 $ResticEmailUsername='<EMAIL LOGIN USERNAME OR EMPTY FOR NO USERNAME>'
