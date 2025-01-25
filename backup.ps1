@@ -242,7 +242,7 @@ function Invoke-Backup {
         else {
             # Build the list of folders from settings
             ForEach ($path in $item.Value) {
-                $p = '"{0}"' -f ((Join-Path $root_path $path) -replace "\\$")
+                $p = '{0}' -f ((Join-Path $root_path $path) -replace "\\$")
                 
                 if(Test-Path ($p -replace '"')) {
                     # add the folder if it exists
@@ -278,7 +278,7 @@ function Invoke-Backup {
         }
         else {
             # Launch Restic
-            & $ResticExe backup $folder_list $vss_option --tag "$tag" --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+            & $ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
             if(-not $?) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
                 $return_value = $false
@@ -304,8 +304,12 @@ function Send-Email {
         $Action = "Backup"
     }
 
-    $password = ConvertTo-SecureString $ResticEmailPassword -AsPlainText -Force
-    $credentials = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)
+    # set email credentials if a username and passsword are provided in configuration
+    $credentials = @{}
+    if (-not [String]::IsNullOrEmpty($ResticEmailPassword) -and -not [String]::IsNullOrEmpty($ResticEmailUsername)) {
+        $password = ConvertTo-SecureString $ResticEmailPassword -AsPlainText -Force
+        $credentials = @{Credential = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)}
+    }
 
     $status = "SUCCESS"
     $past_failure = $false
@@ -322,7 +326,7 @@ function Send-Email {
         }
     }
     else {
-        $body = "Crtical Error! Restic $Action log is empty or missing. Check log file path."
+        $body = "Critical Error! Restic $Action log is empty or missing. Check log file path."
         $status = "ERROR"
     }
     $attachments = [System.Collections.Generic.List[string]]::new()

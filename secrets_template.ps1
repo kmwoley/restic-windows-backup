@@ -13,5 +13,5 @@ $PSEmailServer='<SMTP SERVER>'
 $PSEmailPort=25
 $ResticEmailTo='<DESTINATION EMAIL ADDRESS>'
 $ResticEmailFrom='<FROM EMAIL ADDRESS>'
-$ResticEmailUsername='<EMAIL LOGIN USERNAME>'
-$ResticEmailPassword='<EMAIL PASSWORD>'
+$ResticEmailUsername='<EMAIL LOGIN USERNAME OR EMPTY FOR NO USERNAME>'
+$ResticEmailPassword='<EMAIL PASSWORD OR EMPTY FOR NO PASSWORD>'
