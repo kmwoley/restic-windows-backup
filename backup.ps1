@@ -307,8 +307,10 @@ function Send-Email {
     # set email credentials if a username and passsword are provided in configuration
     $credentials = @{}
     if (-not [String]::IsNullOrEmpty($ResticEmailPassword) -and -not [String]::IsNullOrEmpty($ResticEmailUsername)) {
-        $password = ConvertTo-SecureString $ResticEmailPassword -AsPlainText -Force
-        $credentials = @{Credential = New-Object System.Management.Automation.PSCredential ($ResticEmailUsername, $password)}
+        $password = ConvertTo-SecureString -String $ResticEmailPassword -AsPlainText -Force
+        $credentials = @{
+            "Credential" = [System.Management.Automation.PSCredential]::new($ResticEmailUsername, $password)
+        }
     }
 
     $status = "SUCCESS"
@@ -340,7 +342,15 @@ function Send-Email {
         # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
         $temp_error_log = $ErrorLog + "_temp"
 
-        Send-MailKitMessage -SMTPServer $PSEmailServer -Port $PSEmailPort -UseSecureConnectionIfAvailable -Credential $credentials -From $ResticEmailFrom -RecipientList $ResticEmailTo -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log 
+        # Backwards compatability for $ResticEmailConfig port definition:
+        # $ResticEmailConfig is obsolete and should be replaced with $PSEmailPort
+        if ($null -ne $ResticEmailConfig -and $ResticEmailConfig.ContainsKey('Port')) {
+            if ($null -eq $PSEmailPort) {
+                $PSEmailPort = $ResticEmailConfig['Port']
+            }
+        }
+
+        Send-MailKitMessage -SMTPServer $PSEmailServer -Port $PSEmailPort -UseSecureConnectionIfAvailable @credentials -From $ResticEmailFrom -RecipientList $ResticEmailTo -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log | Out-File -Append $SuccessLog
 
         if(-not $?) {
             "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog
