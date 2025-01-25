@@ -10,7 +10,7 @@ $Env:RESTIC_PASSWORD='<BACKUP PASSWORD>'
 
 # email configuration
 $PSEmailServer='<SMTP SERVER>'
-$ResticEmailConfig=@{UseSsl=$true; Port="587"}
+$PSEmailPort=25
 $ResticEmailTo='<DESTINATION EMAIL ADDRESS>'
 $ResticEmailFrom='<FROM EMAIL ADDRESS>'
 $ResticEmailUsername='<EMAIL LOGIN USERNAME OR EMPTY FOR NO USERNAME>'

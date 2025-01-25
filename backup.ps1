@@ -297,6 +297,8 @@ function Invoke-Backup {
 function Send-Email {
     Param($SuccessLog, $ErrorLog, $Action)
 
+    Import-Module Send-MailKitMessage
+
     # default the action string to "Backup"
     if($null -eq $Action) {
         $Action = "Backup"
@@ -327,9 +329,9 @@ function Send-Email {
         $body = "Critical Error! Restic $Action log is empty or missing. Check log file path."
         $status = "ERROR"
     }
-    $attachments = @{}
+    $attachments = [System.Collections.Generic.List[string]]::new()
     if (($null -ne $ErrorLog) -and (Test-Path $ErrorLog) -and (Get-Item $ErrorLog).Length -gt 0) {
-        $attachments = @{Attachments = $ErrorLog}
+        $attachments.Add("$ErrorLog")
         $status = "ERROR"
     }
     if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or ((($status -eq "ERROR") -or $past_failure) -and ($SendEmailOnError -ne $false))) {
@@ -338,7 +340,7 @@ function Send-Email {
         # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
         $temp_error_log = $ErrorLog + "_temp"
 
-        Send-MailMessage @ResticEmailConfig -From $ResticEmailFrom -To $ResticEmailTo @credentials -Subject $subject -Body $body @attachments 3>&1 2>> $temp_error_log
+        Send-MailKitMessage -SMTPServer $PSEmailServer -Port $PSEmailPort -UseSecureConnectionIfAvailable -Credential $credentials -From $ResticEmailFrom -RecipientList $ResticEmailTo -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log 
 
         if(-not $?) {
             "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog
