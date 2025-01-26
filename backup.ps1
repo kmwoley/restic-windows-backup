@@ -346,18 +346,24 @@ function Send-Email {
         $body = "Critical Error! Restic $Action log is empty or missing. Check log file path."
         $status = "ERROR"
     }
+
     $attachments = [System.Collections.Generic.List[string]]::new()
     if (($null -ne $ErrorLog) -and (Test-Path $ErrorLog) -and (Get-Item $ErrorLog).Length -gt 0) {
         $attachments.Add("$ErrorLog")
         $status = "ERROR"
     }
+    
     if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or ((($status -eq "ERROR") -or $past_failure) -and ($SendEmailOnError -ne $false))) {
         $subject = "$env:COMPUTERNAME Restic $Action Report [$status]"
 
         # create a temporary error log to log errors; can't write to the same file that Send-MailMessage is reading
         $temp_error_log = $ErrorLog + "_temp"
 
-        Send-MailKitMessage -SMTPServer $ResticEmailServer -Port $ResticEmailPort -UseSecureConnectionIfAvailable @credentials -From $ResticEmailFrom -RecipientList $ResticEmailTo -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log | Out-File -Append $SuccessLog
+        $from = [MimeKit.MailboxAddress]$ResticEmailFrom;
+        $recipients = [MimeKit.InternetAddressList]::new();
+        $recipients.Add([MimeKit.InternetAddress]$ResticEmailTo);
+        
+        Send-MailKitMessage -SMTPServer $ResticEmailServer -Port $ResticEmailPort -UseSecureConnectionIfAvailable @credentials -From $from -RecipientList $recipients -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log | Out-File -Append $SuccessLog
 
         if(-not $?) {
             "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog
