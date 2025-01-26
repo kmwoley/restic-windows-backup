@@ -1,5 +1,8 @@
 # backup configuration
 $ExeName = "restic.exe"
+$AdditionalParameters = @()
+$SelfUpdateParameters = @()
+$AllowResticSelfUpdate = $true
 $InstallPath = "C:\restic"
 $ResticExe = Join-Path $InstallPath $ExeName
 $StateFile = Join-Path $InstallPath "state.xml"
