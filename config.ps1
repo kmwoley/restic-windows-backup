@@ -1,16 +1,13 @@
 # general configuration
-$ExeName = "restic.exe"
 $InstallPath = "C:\restic"
-$ResticExe = Join-Path $InstallPath $ExeName
-$StateFile = Join-Path $InstallPath "state.xml"
-$LogPath = Join-Path $InstallPath "logs"
+$ExeName = "restic.exe"
+$GlobalParameters = @()
 $LogRetentionDays = 30
 $InternetTestAttempts = 10
 $GlobalRetryAttempts = 4
-$AdditionalParameters = @()
 
 # email configuration
-$SendEmailOnSuccess = $true
+$SendEmailOnSuccess = $false
 $SendEmailOnError = $true
 
 # backup configuration

@@ -2,12 +2,12 @@
 # Restic Windows Backup Script
 #
 
-# =========== start configuration =========== # 
+# =========== start configuration =========== #
 
-# set restic configuration parmeters (destination, passwords, etc.)
+# load restic configuration parmeters (destination, passwords, etc.)
 $SecretsScript = Join-Path $PSScriptRoot "secrets.ps1"
 
-# backup configuration variables
+# load backup configuration variables
 $ConfigScript = Join-Path $PSScriptRoot "config.ps1"
 
 # =========== end configuration =========== #
@@ -19,8 +19,8 @@ $Script:ResticStateLastDeepMaintenance = $null
 $Script:ResticStateMaintenanceCounter = $null
 $Script:ResticStateLastBackupSuccessful = $true
 $Script:ResticStateLastMaintenanceSuccessful = $true
- 
-# Returns all drive letters which exactly match the serial number, drive label, or drive name of 
+
+# Returns all drive letters which exactly match the serial number, drive label, or drive name of
 # the input parameter. Returns all drives if no input parameter is provided.
 # inspiration: https://stackoverflow.com/questions/31088930/combine-get-disk-info-and-logicaldisk-info-in-powershell
 function Get-Drives {
@@ -35,16 +35,16 @@ function Get-Drives {
             $drives = Get-CimAssociatedInstance -ResultClassName Win32_LogicalDisk -InputObject $partition
 
             foreach($drive in $drives) {
-                    
+
                 $volume = Get-Volume |
                           Where-Object { $_.DriveLetter -eq $drive.DeviceID.Trim(":") } |
                           Select-Object -First 1
 
-                if(($diskMetadata.SerialNumber.trim() -eq $ID) -or 
+                if(($diskMetadata.SerialNumber.trim() -eq $ID) -or
                     ($disk.Caption -eq $ID) -or
                     ($volume.FileSystemLabel  -eq $ID) -or
                     ($null -eq $ID)) {
-    
+
                     [PSCustomObject] @{
                         DriveLetter   = $drive.DeviceID
                         Number        = $disk.Index
@@ -79,12 +79,12 @@ function Set-BackupState {
 function Invoke-Unlock {
     Param($SuccessLog, $ErrorLog)
 
-    $locks = & $ResticExe $AdditionalParameters list locks --no-lock -q 3>&1 2>> $ErrorLog
+    $locks = Invoke-Expression "$ResticExe list locks --no-lock -q 3>&1 2>> $ErrorLog"
     if($locks.Length -gt 0) {
         # unlock the repository (assumes this machine is the only one that will ever use it)
-        & $ResticExe $AdditionalParameters unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+        Invoke-Expression "$ResticExe unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
         "[[Unlock]] Repository was locked. Unlocking." | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
-        Start-Sleep 120 
+        Start-Sleep 120
     }
 }
 
@@ -112,7 +112,7 @@ function Test-Maintenance {
         }
     }
     else {
-        "[[Maintenance]] Running - no past maintenance history known." | Out-File -Append $SuccessLog        
+        "[[Maintenance]] Running - no past maintenance history known." | Out-File -Append $SuccessLog
         return $true
     }
 }
@@ -120,14 +120,14 @@ function Test-Maintenance {
 # run maintenance on the backup set
 function Invoke-Maintenance {
     Param($SuccessLog, $ErrorLog)
-    
+
     "[[Maintenance]] Start $(Get-Date)" | Out-File -Append $SuccessLog
     $maintenance_success = $true
     Start-Sleep 120
 
     # forget snapshots based upon the retention policy
     "[[Maintenance]] Start forgetting..." | Out-File -Append $SuccessLog
-    & $ResticExe $AdditionalParameters forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+    Invoke-Expression "$ResticExe forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
     if(-not $?) {
         "[[Maintenance]] Forget operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -136,7 +136,7 @@ function Invoke-Maintenance {
     # prune (remove) data from the backup step. Running this separate from `forget` because
     #   `forget` only prunes when it detects removed snapshots upon invocation, not previously removed
     "[[Maintenance]] Start pruning..." | Out-File -Append $SuccessLog
-    & $ResticExe $AdditionalParameters prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+    Invoke-Expression "$ResticExe prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
     if(-not $?) {
         "[[Maintenance]] Prune operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -163,7 +163,7 @@ function Invoke-Maintenance {
         $Script:ResticStateLastDeepMaintenance = Get-Date
     }
 
-    & $ResticExe $AdditionalParameters check @data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+    Invoke-Expression "$ResticExe check @data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
     if(-not $?) {
         "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -172,7 +172,7 @@ function Invoke-Maintenance {
     if($AllowResticSelfUpdate -eq $true) {
         # check for updated restic version
         "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
-        & $ResticExe $SelfUpdateParameters self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+        Invoke-Expression "$ResticExe $SelfUpdateParameters self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
         if(-not $?) {
             "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
             $maintenance_success = $false
@@ -180,7 +180,7 @@ function Invoke-Maintenance {
 
         "[[Maintenance]] End $(Get-Date)" | Out-File -Append $SuccessLog
     }
-    
+
     if($maintenance_success -eq $true) {
         $Script:ResticStateLastMaintenance = Get-Date
         $Script:ResticStateMaintenanceCounter = 0
@@ -189,7 +189,7 @@ function Invoke-Maintenance {
     return $maintenance_success
 }
 
-# Run restic backup 
+# Run restic backup
 function Invoke-Backup {
     Param($SuccessLog, $ErrorLog)
 
@@ -217,7 +217,7 @@ function Invoke-Backup {
                 $ignore_error = ($null -ne $IgnoreMissingBackupSources) -and $IgnoreMissingBackupSources
                 $warning_message = "[[Backup]] Warning - backup path $root_path not found."
                 if($ignore_error) {
-                    $warning_message | Out-File -Append $SuccessLog                    
+                    $warning_message | Out-File -Append $SuccessLog
                 }
                 else {
                     $warning_message | Tee-Object -Append $SuccessLog | Out-File -Append $ErrorLog
@@ -225,30 +225,30 @@ function Invoke-Backup {
                 }
                 continue
             }
-            
+
             $root_path = Join-Path $drives[0].DriveLetter ""
-            
+
             # disable VSS / file system snapshot for external drives
             # TODO: would be best to just test for VSS compatibility on the drive, rather than assume it won't work
             $vss_option = $null
         }
 
         "[[Backup]] Start $(Get-Date) [$tag]" | Out-File -Append $SuccessLog
-        
+
         # build the list of folders to backup
         $folder_list = New-Object System.Collections.Generic.List[System.Object]
         if ($item.Value.Count -eq 0) {
             # backup everything in the root if no folders are provided
-            $folder_list.Add($root_path)
+            $folder_list.Add("`"$root_path`"")
         }
         else {
             # Build the list of folders from settings
             ForEach ($path in $item.Value) {
                 $p = '{0}' -f ((Join-Path $root_path $path) -replace "\\$")
-                
+
                 if(Test-Path ($p -replace '"')) {
                     # add the folder if it exists
-                    $folder_list.Add($p)
+                    $folder_list.Add("`"$p`"")
                 }
                 else {
                     # if the folder doesn't exist, log a warning/error
@@ -265,7 +265,7 @@ function Invoke-Backup {
             }
 
         }
-        
+
         if(-not $folder_list) {
             # there are no folders to backup
             $ignore_error = ($null -ne $IgnoreMissingBackupSources) -and $IgnoreMissingBackupSources
@@ -280,7 +280,7 @@ function Invoke-Backup {
         }
         else {
             # Launch Restic
-            & $ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalParameters $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog
+            Invoke-Expression "$ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
             if(-not $?) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
                 $return_value = $false
@@ -289,7 +289,7 @@ function Invoke-Backup {
 
         "[[Backup]] End $(Get-Date) [$tag]" | Out-File -Append $SuccessLog
     }
-    
+
     Set-Location $starting_location
     "[[Backup]] End $(Get-Date)" | Out-File -Append $SuccessLog
 
@@ -336,7 +336,7 @@ function Send-Email {
     if (($null -ne $SuccessLog) -and (Test-Path $SuccessLog) -and (Get-Item $SuccessLog).Length -gt 0) {
         $body = $(Get-Content -Raw $SuccessLog)
 
-        # if previous run contained an error, send the success email confirming that the error has been resolved        
+        # if previous run contained an error, send the success email confirming that the error has been resolved
         if($Action -eq "Backup") {
             $past_failure = -not $Script:ResticStateLastBackupSuccessful
         }
@@ -354,7 +354,7 @@ function Send-Email {
         $attachments.Add("$ErrorLog")
         $status = "ERROR"
     }
-    
+
     if((($status -eq "SUCCESS") -and ($SendEmailOnSuccess -ne $false)) -or ((($status -eq "ERROR") -or $past_failure) -and ($SendEmailOnError -ne $false))) {
         $subject = "$env:COMPUTERNAME Restic $Action Report [$status]"
 
@@ -364,7 +364,7 @@ function Send-Email {
         $from = [MimeKit.MailboxAddress]$ResticEmailFrom;
         $recipients = [MimeKit.InternetAddressList]::new();
         $recipients.Add([MimeKit.InternetAddress]$ResticEmailTo);
-        
+
         Send-MailKitMessage -SMTPServer $ResticEmailServer -Port $ResticEmailPort -UseSecureConnectionIfAvailable @credentials -From $from -RecipientList $recipients -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log | Out-File -Append $SuccessLog
 
         if(-not $?) {
@@ -379,22 +379,22 @@ function Send-Email {
 
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
-    
+
     if($InternetTestAttempts -le 0) {
-        "[[Internet]] Internet connectivity check disabled. Skipping." | Out-File -Append $SuccessLog    
+        "[[Internet]] Internet connectivity check disabled. Skipping." | Out-File -Append $SuccessLog
         return $true
     }
 
     # skip the internet connectivity check for local repos
     if(Test-Path $env:RESTIC_REPOSITORY) {
-        "[[Internet]] Local repository. Skipping internet connectivity check." | Out-File -Append $SuccessLog    
+        "[[Internet]] Local repository. Skipping internet connectivity check." | Out-File -Append $SuccessLog
         return $true
     }
 
     $repository_host = ''
 
     # use generic internet service for non-specific repo types (e.g. swift:, rclone:, etc. )
-    if(($env:RESTIC_REPOSITORY -match "^swift:") -or 
+    if(($env:RESTIC_REPOSITORY -match "^swift:") -or
         ($env:RESTIC_REPOSITORY -match "^rclone:")) {
         $repository_host = "cloudflare.com"
     }
@@ -466,7 +466,7 @@ function Invoke-HistoryCheck {
 
 # main function
 function Invoke-Main {
-    
+
     # check for elevation, required for creation of shadow copy (VSS)
     if (-not (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
     {
@@ -476,10 +476,18 @@ function Invoke-Main {
 
     # initialize secrets
     . $SecretsScript
-    
+
     # initialize config
     . $ConfigScript
-    
+
+    # apply global configuration
+    $global:ResticExe = Join-Path $InstallPath $ExeName
+    if(-not [String]::IsNullOrEmpty($GlobalParameters)) {
+        $ResticExe = "$ResticExe $GlobalParameters"
+    }
+    $global:StateFile = Join-Path $InstallPath "state.xml"
+    $global:LogPath = Join-Path $InstallPath "logs"
+
     Get-BackupState
 
     if(!(Test-Path $LogPath)) {
@@ -499,9 +507,9 @@ function Invoke-Main {
         $timestamp = Get-Date -Format FileDateTime
         $success_log = Join-Path $LogPath ($timestamp + ".backup.log.txt")
         $error_log = Join-Path $LogPath ($timestamp + ".backup.err.txt")
-        
+
         $repository_available = Invoke-ConnectivityCheck $success_log $error_log
-        if($repository_available -eq $true) { 
+        if($repository_available -eq $true) {
             Invoke-Unlock $success_log $error_log
             $backup_success = Invoke-Backup $success_log $error_log
 
@@ -527,9 +535,9 @@ function Invoke-Main {
         }
 
         $attempt_count--
-        
+
         # update logs prior to sending email
-        if($backup_success -eq $false) { 
+        if($backup_success -eq $false) {
             if($attempt_count -gt 0) {
                 Write-Output "[[Backup]] Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
             }
@@ -543,7 +551,7 @@ function Invoke-Main {
 
         # update the state of the last backup success or failure
         $Script:ResticStateLastBackupSuccessful = $backup_success
-        
+
         # Save state to file
         Set-BackupState
 
@@ -554,7 +562,7 @@ function Invoke-Main {
         else {
             break
         }
-    } 
+    }
 
     # only run maintenance if the backup was successful and maintenance is needed
     $attempt_count = $GlobalRetryAttempts
@@ -563,9 +571,9 @@ function Invoke-Main {
         $timestamp = Get-Date -Format FileDateTime
         $success_log = Join-Path $LogPath ($timestamp + ".maintenance.log.txt")
         $error_log = Join-Path $LogPath ($timestamp + ".maintenance.err.txt")
-        
+
         $repository_available = Invoke-ConnectivityCheck $success_log $error_log
-        if($repository_available -eq $true) { 
+        if($repository_available -eq $true) {
             $maintenance_success = Invoke-Maintenance $success_log $error_log
 
             # $maintenance_success = ($maintenance_success -eq $true) -and (!(Test-Path $error_log) -or ((Get-Item $error_log).Length -eq 0))
@@ -582,11 +590,11 @@ function Invoke-Main {
             Write-Output "[[Maintenance]] Failed - cannot access repository." | Tee-Object -Append $success_log | Tee-Object -Append $error_log
             $error_count++
         }
-        
+
         $attempt_count--
 
         # update logs prior to sending email
-        if($maintenance_success -eq $false) { 
+        if($maintenance_success -eq $false) {
             if($attempt_count -gt 0) {
                 Write-Output "[[Maintenance]] Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
             }
@@ -600,7 +608,7 @@ function Invoke-Main {
 
         # update the state of the last maintenance success or failure
         $Script:ResticStateLastMaintenanceSuccessful = $maintenance_success
-        
+
         # Save state to file
         Set-BackupState
 
@@ -611,7 +619,7 @@ function Invoke-Main {
         else {
             break
         }
-    }    
+    }
 
     # Save state to file
     Set-BackupState
