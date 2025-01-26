@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.7](https://github.com/kmwoley/restic-windows-backup/tree/1.7) (2025-01-25)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.6...1.7)
+
+*Upgrade Warning - Future Breaking Change*
+This release deprecates the following `secrets.ps1` variables:
+* `$PSEmailServer` is replaced by `$ResticEmailServer`
+* `$ResticEmailConfig` is replaced by `$ResticEmailPort`
+In the next release, `$ResticEmailServer` and `$ResticEmailPort` will be required. This release will still work if the deprecated variables are defined.
+
+## What's Changed
+* Update README.md by @enzo-g in https://github.com/kmwoley/restic-windows-backup/pull/58
+* fix typo in readme by @jonas-hag in https://github.com/kmwoley/restic-windows-backup/pull/74
+* fix typo by @Export33 in https://github.com/kmwoley/restic-windows-backup/pull/83
+* Added a more detailed example for backup sources by @Export33 in https://github.com/kmwoley/restic-windows-backup/pull/84
+* Limit snapshot pruning to the current host by @living180 in https://github.com/kmwoley/restic-windows-backup/pull/94
+* Allow for unauthenticated SMTP. by @SeeJayEmm in https://github.com/kmwoley/restic-windows-backup/pull/81
+* Replace deprecated Send-MailMessage with Send-MailKitMessage by @innovara in https://github.com/kmwoley/restic-windows-backup/pull/107
+* Merge 2024.11 into Main by @kmwoley in https://github.com/kmwoley/restic-windows-backup/pull/110
+
+## New Contributors
+* @enzo-g made their first contribution in https://github.com/kmwoley/restic-windows-backup/pull/58
+* @jonas-hag made their first contribution in https://github.com/kmwoley/restic-windows-backup/pull/74
+* @Export33 made their first contribution in https://github.com/kmwoley/restic-windows-backup/pull/83
+* @living180 made their first contribution in https://github.com/kmwoley/restic-windows-backup/pull/94
+* @SeeJayEmm made their first contribution in https://github.com/kmwoley/restic-windows-backup/pull/81
+* @innovara made their first contribution in https://github.com/kmwoley/restic-windows-backup/pull/107
+
 ## [1.6](https://github.com/kmwoley/restic-windows-backup/tree/1.6) (2023-01-14)
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.5...1.6)
 
