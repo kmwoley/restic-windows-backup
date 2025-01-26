@@ -29,15 +29,15 @@ Simplifies the process of installation and running daily backups.
    1. Email sending configuration is also contained with this file. The scripts assume you want to get emails about the success/failure of each backup attempt.
 1. Run `install.ps1` file
    1. From the elevated (Run as Administrator) Powershell window, run `.\install.ps1`
-   1. This will initialize the repo, create your logfile directory, and create a scheduled task in Windows Task Scheduler to run the task daily.
+   1. This will initialize the repo, create your logfile directory, create a scheduled task in Windows Task Scheduler to run the task daily, and install Send-MailKitMessage module.
 1. Add your `$BackupSources` to `config.ps1`
    1. By default, all of `C:\` will be backed up. You can add multiple root drives to be backed up. And you can define only specific folders you would like backed up.
-   1. External, removalbe disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]=@()`. I would recommend using the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command. You may also want to set `$IgnoreMissingBackupSources=$true` to avoid seeing errors when the removable drive is not present.
+   1. External, removable disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]=@()`. I would recommend using the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command. You may also want to set `$IgnoreMissingBackupSources=$true` to avoid seeing errors when the removable drive is not present.
 1. Add files/paths not to backup to `local.exclude`
    1. If you don't want to modify the included exclude file, you can add any files/paths you want to exclude from the backup to `local.exclude`
-1. Add `restic.exe` to the Windows Defender / Virus & Threat Detection Exclude list
+1. Add `C:\restic\restic.exe` to the Windows Defender / Virus & Threat Detection Exclude list
    1. Backups on Windows are really slow if you don't set the Antivirus to ignore restic.
-   1. Navigate from the Start menu to: *Virus & threat protection > Manage Settings > Exclusions (Add or remove exclusions) > Add an exclusion (Process) > Process Name: "restic.exe"*
+   1. Navigate from the Start menu to: *Virus & threat protection > Manage Settings > Exclusions (Add or remove exclusions) > Add an exclusion (Process) > Process Name: "C:\restic\restic.exe"*
 1. *(Recommended)* To a test backup triggered from Task Scheduler
    1. It's recommended to open Windows Task Scheduler and trigger the task to run manually to test your first backup.
       1. *Open Task Scheduler > Find "Restic Backup" > Right Click > Run*

@@ -5,10 +5,10 @@
 if(-not (Test-Path $ResticExe)) {
     $url = $null
     if([Environment]::Is64BitOperatingSystem){
-        $url = "https://github.com/restic/restic/releases/download/v0.15.0/restic_0.15.0_windows_amd64.zip"
+        $url = "https://github.com/restic/restic/releases/download/v0.17.3/restic_0.17.3_windows_amd64.zip"
     }
     else {
-        $url = "https://github.com/restic/restic/releases/download/v0.15.0/restic_0.15.0_windows_386.zip"
+        $url = "https://github.com/restic/restic/releases/download/v0.17.3/restic_0.17.3_windows_386.zip"
     }
     $output = Join-Path $InstallPath "restic.zip"
     Invoke-WebRequest -Uri $url -OutFile $output
@@ -62,4 +62,8 @@ else {
     Write-Warning "[[Scheduler]] Backup task not scheduled: there is already a task with the name '$backup_task_name'."
 }
 
-
+# Install NuGet and Send-MailKitMessage module (by force)
+if ($PSVersionTable.PSVersion.Major -eq 5) {
+    Install-PackageProvider -Name NuGet -Force
+}
+Install-Module Send-MailKitMessage -Repository PSGallery -Scope AllUsers -Force

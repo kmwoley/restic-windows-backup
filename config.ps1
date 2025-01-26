@@ -13,11 +13,11 @@ $LogRetentionDays = 30
 $InternetTestAttempts = 10
 $GlobalRetryAttempts = 4
 $IgnoreMissingBackupSources = $false
-$AdditionalBackupParameters = @("--exclude-if-present", ".nobackup")
+$AdditionalBackupParameters = @("--exclude-if-present", ".nobackup", "--no-scan")
 
 # maintenance configuration
 $SnapshotMaintenanceEnabled = $true
-$SnapshotRetentionPolicy = @("--group-by", "host,tags", "--keep-daily", "30", "--keep-weekly", "52", "--keep-monthly", "24", "--keep-yearly", "10")
+$SnapshotRetentionPolicy = @("--host", $env:COMPUTERNAME, "--group-by", "host,tags", "--keep-daily", "30", "--keep-weekly", "52", "--keep-monthly", "24", "--keep-yearly", "10")
 $SnapshotPrunePolicy = @("--max-unused", "1%")
 $SnapshotMaintenanceInterval = 7
 $SnapshotMaintenanceDays = 30
@@ -30,11 +30,13 @@ $SendEmailOnError = $true
 # Paths to backup
 $BackupSources = @{}
 $BackupSources["C:\"] = @(
-#    'Users'
+#    "Users\Example\Desktop\Source1",
+#    "Users\Example\Desktop\Source2"
 )
-#$BackupSources["D:\"] = @(
-#    'Software'
-#)
+# $BackupSources["D:\"] = @(
+#    "Example\Source3",
+#    "Example\Source4"
+# )
 #$BackupSources["DRIVE_LABEL_NAME_OR_SERIAL_NUMBER"] = @(
-#    'FolderName'
+#    "Example\FolderName"
 #)
