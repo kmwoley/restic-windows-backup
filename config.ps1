@@ -3,7 +3,7 @@ $InstallPath = "C:\restic"
 $ExeName = "restic.exe"
 $GlobalParameters = @()
 $LogRetentionDays = 30
-$BackupOnMeteredNetwork = $false
+$BackupOnMeteredNetwork = $true
 $InternetTestAttempts = 10
 $GlobalRetryAttempts = 4
 
