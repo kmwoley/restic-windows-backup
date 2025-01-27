@@ -379,6 +379,18 @@ function Send-Email {
     }
 }
 
+# check if on metered network,
+# returns $true the current connection is a metered network
+function Invoke-MeteredCheck {
+
+    [void][Windows.Networking.Connectivity.NetworkInformation, Windows, ContentType = WindowsRuntime]
+    
+    $cost = [Windows.Networking.Connectivity.NetworkInformation]::GetInternetConnectionProfile().GetConnectionCost()
+    return ($cost.ApproachingDataLimit -or $cost.OverDataLimit -or $cost.Roaming -or $cost.BackgroundDataUsageRestricted -or ($cost.NetworkCostType -ne "Unrestricted"))
+}
+
+# check network conditions, retrying a limited number of times until a connection is established
+# returns $true if the repository is accessable and the configuration allows us to use it
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
 
@@ -442,7 +454,7 @@ function Invoke-ConnectivityCheck {
             "[[Internet]] Waiting for connection to repository ($repository_host)... $sleep_count" | Out-File -Append $SuccessLog
             Start-Sleep 30
         }
-        elseif((-not ([String]::IsNullOrEmpty($BackupOnMeteredNetwork)) -or $BackupOnMeteredNetwork)) -and Invoke-MeteredCheck)) {
+        elseif((-not ([String]::IsNullOrEmpty($BackupOnMeteredNetwork) -or $BackupOnMeteredNetwork)) -and (Invoke-MeteredCheck)) {
             "[[Internet]] Waiting for an unmetered network connection... $sleep_count" | Out-File -Append $SuccessLog        
             Start-Sleep 30
         }
@@ -451,15 +463,6 @@ function Invoke-ConnectivityCheck {
         }
         $sleep_count--
     }
-}
-
-# check if on metered network
-function Invoke-MeteredCheck {
-
-    [void][Windows.Networking.Connectivity.NetworkInformation, Windows, ContentType = WindowsRuntime]
-    
-    $cost = [Windows.Networking.Connectivity.NetworkInformation]::GetInternetConnectionProfile().GetConnectionCost()
-    $cost.ApproachingDataLimit -or $cost.OverDataLimit -or $cost.Roaming -or $cost.BackgroundDataUsageRestricted -or ($cost.NetworkCostType -ne "Unrestricted")
 }
 
 # check previous logs
