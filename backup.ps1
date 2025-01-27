@@ -442,11 +442,24 @@ function Invoke-ConnectivityCheck {
             "[[Internet]] Waiting for connection to repository ($repository_host)... $sleep_count" | Out-File -Append $SuccessLog
             Start-Sleep 30
         }
+        elseif((-not ([String]::IsNullOrEmpty($BackupOnMeteredNetwork)) -or $BackupOnMeteredNetwork)) -and Invoke-MeteredCheck)) {
+            "[[Internet]] Waiting for an unmetered network connection... $sleep_count" | Out-File -Append $SuccessLog        
+            Start-Sleep 30
+        }
         else {
             return $true
         }
         $sleep_count--
     }
+}
+
+# check if on metered network
+function Invoke-MeteredCheck {
+
+    [void][Windows.Networking.Connectivity.NetworkInformation, Windows, ContentType = WindowsRuntime]
+    
+    $cost = [Windows.Networking.Connectivity.NetworkInformation]::GetInternetConnectionProfile().GetConnectionCost()
+    $cost.ApproachingDataLimit -or $cost.OverDataLimit -or $cost.Roaming -or $cost.BackgroundDataUsageRestricted -or ($cost.NetworkCostType -ne "Unrestricted")
 }
 
 # check previous logs
