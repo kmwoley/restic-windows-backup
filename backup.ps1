@@ -121,7 +121,7 @@ function Test-Maintenance {
 function Invoke-Maintenance {
     Param($SuccessLog, $ErrorLog)
 
-    "[[Maintenance]] Start $(Get-Date)" | Out-File -Append $SuccessLog
+    "[[Maintenance]] Start $(Get-Date)" | Tee-Object -Append $SuccessLog | Write-Host
     $maintenance_success = $true
     Start-Sleep 120
 
@@ -163,9 +163,9 @@ function Invoke-Maintenance {
         $Script:ResticStateLastDeepMaintenance = Get-Date
     }
 
-    Invoke-Expression "$Script:ResticExe check @data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+    Invoke-Expression "$Script:ResticExe check $data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
     if(-not $?) {
-        "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+        "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
         $maintenance_success = $false
     }
 
@@ -181,7 +181,7 @@ function Invoke-Maintenance {
         }
     }
 
-    "[[Maintenance]] End $(Get-Date)" | Out-File -Append $SuccessLog
+    "[[Maintenance]] End $(Get-Date)" | Tee-Object -Append $SuccessLog | Write-Host
 
     if($maintenance_success -eq $true) {
         $Script:ResticStateLastMaintenance = Get-Date
@@ -195,7 +195,7 @@ function Invoke-Maintenance {
 function Invoke-Backup {
     Param($SuccessLog, $ErrorLog)
 
-    "[[Backup]] Start $(Get-Date)" | Out-File -Append $SuccessLog
+    "[[Backup]] Start $(Get-Date)" | Tee-Object -Append $SuccessLog | Write-Host
     $return_value = $true
     $starting_location = Get-Location
     ForEach ($item in $BackupSources.GetEnumerator()) {
@@ -284,7 +284,7 @@ function Invoke-Backup {
             # Launch Restic
             Invoke-Expression "$Script:ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
             if(-not $?) {
-                "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+                "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
                 $return_value = $false
             }
         }
@@ -293,7 +293,7 @@ function Invoke-Backup {
     }
 
     Set-Location $starting_location
-    "[[Backup]] End $(Get-Date)" | Out-File -Append $SuccessLog
+    "[[Backup]] End $(Get-Date)" | Tee-Object -Append $SuccessLog | Write-Host
 
     return $return_value
 }
@@ -322,14 +322,14 @@ function Send-Email {
     if ($null -ne $ResticEmailConfig -and $ResticEmailConfig.ContainsKey('Port')) {
         if ($null -eq $ResticEmailPort) {
             $ResticEmailPort = $ResticEmailConfig['Port']
-            '[[Email]] Warning - $ResticEmailConfig is deprecated. Define $ResticEmailPort in secrets.ps1 instead.' | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+            '[[Email]] Warning - $ResticEmailConfig is deprecated. Define $ResticEmailPort in secrets.ps1 instead.' | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
         }
     }
 
     # Backwards compatibility for $PSEmailServer rename to $ResticEmailServer
     if (($null -ne $PSEmailServer) -and ($null -eq $ResticEmailServer)) {
         $ResticEmailServer = $PSEmailServer
-        '[[Email]] Warning - $PSEmailServer is deprecated. Define $ResticEmailServer in secrets.ps1 instead.' | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
+        '[[Email]] Warning - $PSEmailServer is deprecated. Define $ResticEmailServer in secrets.ps1 instead.' | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
     }
 
     $status = "SUCCESS"
@@ -370,7 +370,7 @@ function Send-Email {
         Send-MailKitMessage -SMTPServer $ResticEmailServer -Port $ResticEmailPort -UseSecureConnectionIfAvailable @credentials -From $from -RecipientList $recipients -Subject $subject -TextBody $body -AttachmentList $attachments 3>&1 2>> $temp_error_log | Out-File -Append $SuccessLog
 
         if(-not $?) {
-            "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Out-File -Append $SuccessLog
+            "[[Email]] Sending email completed with errors" | Tee-Object -Append $temp_error_log | Tee-Object -Append $SuccessLog | Write-Host
         }
 
         # join error logs and remove the temporary
@@ -462,7 +462,7 @@ function Invoke-HistoryCheck {
     $logs = Get-ChildItem $Script:LogPath -Filter $filter | ForEach-Object{$_.Length -gt 0}
     $logs_with_success = ($logs | Where-Object {($_ -eq $false)}).Count
     if($logs.Count -gt 0) {
-        Write-Output "[[History]] $Action success rate: $logs_with_success / $($logs.Count) ($(($logs_with_success / $logs.Count).tostring("P")))" | Tee-Object -Append $SuccessLog
+        "[[History]] $Action success rate: $logs_with_success / $($logs.Count) ($(($logs_with_success / $logs.Count).tostring("P")))" | Tee-Object -Append $SuccessLog  | Write-Host
     }
 }
 
@@ -521,18 +521,18 @@ function Invoke-Main {
             $total_attempts = $GlobalRetryAttempts - $attempt_count + 1
             if($backup_success -eq $true) {
                 # successful backup
-                Write-Output "[[Backup]] Succeeded after $total_attempts attempt(s)" | Tee-Object -Append $success_log
+                "[[Backup]] Succeeded after $total_attempts attempt(s)" | Tee-Object -Append $success_log | Write-Host
 
                 # test to see if maintenance is needed if the backup was successful
                 $maintenance_needed = Test-Maintenance $success_log $error_log
             }
             else {
-                Write-Output "[[Backup]] Ran with errors on attempt $total_attempts" | Tee-Object -Append $success_log | Tee-Object -Append $error_log
+                "[[Backup]] Ran with errors on attempt $total_attempts" | Tee-Object -Append $success_log | Tee-Object -Append $error_log | Write-Host
                 $error_count++
             }
         }
         else {
-            Write-Output "[[Backup]] Failed - cannot access repository." | Tee-Object -Append $success_log | Tee-Object -Append $error_log
+            "[[Backup]] Failed - cannot access repository." | Tee-Object -Append $success_log | Tee-Object -Append $error_log | Write-Host
             $error_count++
         }
 
@@ -541,10 +541,10 @@ function Invoke-Main {
         # update logs prior to sending email
         if($backup_success -eq $false) {
             if($attempt_count -gt 0) {
-                Write-Output "[[Backup]] Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
+                "[[Backup]] Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log  | Write-Host
             }
             else {
-                Write-Output "[[Backup]] Retry limit has been reached. No more attempts to backup will be made." | Tee-Object -Append $success_log
+                "[[Backup]] Retry limit has been reached. No more attempts to backup will be made." | Tee-Object -Append $success_log | Write-Host
             }
         }
 
@@ -581,15 +581,15 @@ function Invoke-Main {
             # $maintenance_success = ($maintenance_success -eq $true) -and (!(Test-Path $error_log) -or ((Get-Item $error_log).Length -eq 0))
             $total_attempts = $GlobalRetryAttempts - $attempt_count + 1
             if($maintenance_success -eq $true) {
-                Write-Output "[[Maintenance]] Succeeded after $total_attempts attempt(s)" | Tee-Object -Append $success_log
+                "[[Maintenance]] Succeeded after $total_attempts attempt(s)" | Tee-Object -Append $success_log | Write-Host
             }
             else {
-                Write-Output "[[Maintenance]] Ran with errors on attempt $total_attempts" | Tee-Object -Append $success_log | Tee-Object -Append $error_log
+                "[[Maintenance]] Ran with errors on attempt $total_attempts" | Tee-Object -Append $success_log | Tee-Object -Append $error_log | Write-Host
                 $error_count++
             }
         }
         else {
-            Write-Output "[[Maintenance]] Failed - cannot access repository." | Tee-Object -Append $success_log | Tee-Object -Append $error_log
+            "[[Maintenance]] Failed - cannot access repository." | Tee-Object -Append $success_log | Tee-Object -Append $error_log | Write-Host
             $error_count++
         }
 
@@ -598,10 +598,10 @@ function Invoke-Main {
         # update logs prior to sending email
         if($maintenance_success -eq $false) {
             if($attempt_count -gt 0) {
-                Write-Output "[[Maintenance]] Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log
+                "[[Maintenance]] Sleeping for 15 min and then retrying..." | Tee-Object -Append $success_log | Write-Host
             }
             else {
-                Write-Output "[[Maintenance]] Retry limit has been reached. No more attempts to run maintenance will be made." | Tee-Object -Append $success_log
+                "[[Maintenance]] Retry limit has been reached. No more attempts to run maintenance will be made." | Tee-Object -Append $success_log | Write-Host
             }
         }
 
