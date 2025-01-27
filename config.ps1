@@ -40,4 +40,3 @@ $SnapshotDeepMaintenanceDays = 90
 
 # restic.exe self update configuration
 $SelfUpdateEnabled = $true
-$SelfUpdateParameters = @()

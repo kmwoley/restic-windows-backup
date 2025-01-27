@@ -1,5 +1,26 @@
-. .\config.ps1
-. .\secrets.ps1
+#
+# Restic Windows Backup - Installation Script
+#
+
+# =========== start configuration =========== #
+
+# load restic configuration parmeters (destination, passwords, etc.)
+$SecretsScript = Join-Path $PSScriptRoot "secrets.ps1"
+
+# load backup configuration variables
+$ConfigScript = Join-Path $PSScriptRoot "config.ps1"
+
+# initialize secrets
+. $SecretsScript
+
+# initialize config
+. $ConfigScript
+
+# apply global configuration
+$global:ResticExe = Join-Path $InstallPath $ExeName
+$global:LogPath = Join-Path $InstallPath "logs"
+
+# =========== end configuration =========== #
 
 # download restic
 if(-not (Test-Path $ResticExe)) {
@@ -17,15 +38,21 @@ if(-not (Test-Path $ResticExe)) {
     Get-ChildItem *.exe | Rename-Item -NewName $ExeName
 }
 
+# Apply global paramters to $ResticExe, after the $ResticExe has been downloaded/confirmed to exist
+if(-not [String]::IsNullOrEmpty($GlobalParameters)) {
+    $ResticExe = "$ResticExe $GlobalParameters"
+}
+
 # Invoke restic self-update to check for a newer version
-if($AllowResticSelfUpdate -eq $true) {
-    & $ResticExe $SelfUpdateParameters self-update
+# This is enabled by default unless configuration disables self-update
+if ([String]::IsNullOrEmpty($SelfUpdateEnabled) -or ($SelfUpdateEnabled -eq $true)) {
+    Invoke-Expression "$ResticExe self-update"
 }
 
 # Create log directory if it doesn't exit
 if(-not (Test-Path $LogPath)) {
     New-Item -ItemType Directory -Force -Path $LogPath | Out-Null
-    Write-Output "[[Init]] Repository successfully initialized."
+    Write-Output "[[Init]] Created log directory: $LogPath"
 }
 
 # Create the local exclude file
@@ -34,7 +61,7 @@ if(-not (Test-Path $LocalExcludeFile)) {
 }
 
 # Initialize the restic repository
-& $ResticExe $AdditionalParameters --verbose init
+Invoke-Expression "$ResticExe --verbose init"
 if($?) {
     Write-Output "[[Init]] Repository successfully initialized."
 }

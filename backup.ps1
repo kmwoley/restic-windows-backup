@@ -169,17 +169,19 @@ function Invoke-Maintenance {
         $maintenance_success = $false
     }
 
-    if($AllowResticSelfUpdate -eq $true) {
+    # Invoke restic self-update to check for a newer version
+    # This is enabled by default unless configuration disables self-update
+    if ([String]::IsNullOrEmpty($SelfUpdateEnabled) -or ($SelfUpdateEnabled -eq $true)) {
         # check for updated restic version
         "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
-        Invoke-Expression "$ResticExe $SelfUpdateParameters self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+        Invoke-Expression "$ResticExe self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
         if(-not $?) {
             "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
             $maintenance_success = $false
         }
-
-        "[[Maintenance]] End $(Get-Date)" | Out-File -Append $SuccessLog
     }
+
+    "[[Maintenance]] End $(Get-Date)" | Out-File -Append $SuccessLog
 
     if($maintenance_success -eq $true) {
         $Script:ResticStateLastMaintenance = Get-Date
