@@ -67,22 +67,22 @@ function Get-Drives {
 
 # restore backup state from disk
 function Get-BackupState {
-    if(Test-Path $StateFile) {
-        Import-Clixml $StateFile | ForEach-Object{ Set-Variable -Scope Script $_.Name $_.Value }
+    if(Test-Path $Script:StateFile) {
+        Import-Clixml $Script:StateFile | ForEach-Object{ Set-Variable -Scope Script $_.Name $_.Value }
     }
 }
 function Set-BackupState {
-    Get-Variable ResticState* | Export-Clixml $StateFile
+    Get-Variable ResticState* | Export-Clixml $Script:StateFile
 }
 
 # unlock the repository if need be
 function Invoke-Unlock {
     Param($SuccessLog, $ErrorLog)
 
-    $locks = Invoke-Expression "$ResticExe list locks --no-lock -q 3>&1 2>> $ErrorLog"
+    $locks = Invoke-Expression "$Script:ResticExe list locks --no-lock -q 3>&1 2>> $ErrorLog"
     if($locks.Length -gt 0) {
         # unlock the repository (assumes this machine is the only one that will ever use it)
-        Invoke-Expression "$ResticExe unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+        Invoke-Expression "$Script:ResticExe unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
         "[[Unlock]] Repository was locked. Unlocking." | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         Start-Sleep 120
     }
@@ -127,7 +127,7 @@ function Invoke-Maintenance {
 
     # forget snapshots based upon the retention policy
     "[[Maintenance]] Start forgetting..." | Out-File -Append $SuccessLog
-    Invoke-Expression "$ResticExe forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+    Invoke-Expression "$Script:ResticExe forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
     if(-not $?) {
         "[[Maintenance]] Forget operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -136,7 +136,7 @@ function Invoke-Maintenance {
     # prune (remove) data from the backup step. Running this separate from `forget` because
     #   `forget` only prunes when it detects removed snapshots upon invocation, not previously removed
     "[[Maintenance]] Start pruning..." | Out-File -Append $SuccessLog
-    Invoke-Expression "$ResticExe prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+    Invoke-Expression "$Script:ResticExe prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
     if(-not $?) {
         "[[Maintenance]] Prune operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -163,7 +163,7 @@ function Invoke-Maintenance {
         $Script:ResticStateLastDeepMaintenance = Get-Date
     }
 
-    Invoke-Expression "$ResticExe check @data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+    Invoke-Expression "$Script:ResticExe check @data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
     if(-not $?) {
         "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
@@ -174,7 +174,7 @@ function Invoke-Maintenance {
     if ([String]::IsNullOrEmpty($SelfUpdateEnabled) -or ($SelfUpdateEnabled -eq $true)) {
         # check for updated restic version
         "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
-        Invoke-Expression "$ResticExe self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+        Invoke-Expression "$Script:ResticExe self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
         if(-not $?) {
             "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
             $maintenance_success = $false
@@ -282,7 +282,7 @@ function Invoke-Backup {
         }
         else {
             # Launch Restic
-            Invoke-Expression "$ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+            Invoke-Expression "$Script:ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
             if(-not $?) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
                 $return_value = $false
@@ -459,7 +459,7 @@ function Invoke-HistoryCheck {
     }
 
     $filter = "*$Action.err.txt".ToLower()
-    $logs = Get-ChildItem $LogPath -Filter $filter | ForEach-Object{$_.Length -gt 0}
+    $logs = Get-ChildItem $Script:LogPath -Filter $filter | ForEach-Object{$_.Length -gt 0}
     $logs_with_success = ($logs | Where-Object {($_ -eq $false)}).Count
     if($logs.Count -gt 0) {
         Write-Output "[[History]] $Action success rate: $logs_with_success / $($logs.Count) ($(($logs_with_success / $logs.Count).tostring("P")))" | Tee-Object -Append $SuccessLog
@@ -483,17 +483,17 @@ function Invoke-Main {
     . $ConfigScript
 
     # apply global configuration
-    $global:ResticExe = Join-Path $InstallPath $ExeName
+    $Script:ResticExe = Join-Path $InstallPath $ExeName
     if(-not [String]::IsNullOrEmpty($GlobalParameters)) {
-        $ResticExe = "$ResticExe $GlobalParameters"
+        $Script:ResticExe = "$Script:ResticExe $GlobalParameters"
     }
-    $global:StateFile = Join-Path $InstallPath "state.xml"
-    $global:LogPath = Join-Path $InstallPath "logs"
+    $Script:StateFile = Join-Path $InstallPath "state.xml"
+    $Script:LogPath = Join-Path $InstallPath "logs"
 
     Get-BackupState
 
-    if(!(Test-Path $LogPath)) {
-        Write-Error "[[Backup]] Log file directory $LogPath does not exist. Exiting."
+    if(!(Test-Path $Script:LogPath)) {
+        Write-Error "[[Backup]] Log file directory $Script:LogPath does not exist. Exiting."
         Send-Email
         exit 1
     }
@@ -507,8 +507,8 @@ function Invoke-Main {
     while ($attempt_count -gt 0) {
         # setup logfiles
         $timestamp = Get-Date -Format FileDateTime
-        $success_log = Join-Path $LogPath ($timestamp + ".backup.log.txt")
-        $error_log = Join-Path $LogPath ($timestamp + ".backup.err.txt")
+        $success_log = Join-Path $Script:LogPath ($timestamp + ".backup.log.txt")
+        $error_log = Join-Path $Script:LogPath ($timestamp + ".backup.err.txt")
 
         $repository_available = Invoke-ConnectivityCheck $success_log $error_log
         if($repository_available -eq $true) {
@@ -571,8 +571,8 @@ function Invoke-Main {
     while (($maintenance_needed -eq $true) -and ($attempt_count -gt 0)) {
         # setup logfiles
         $timestamp = Get-Date -Format FileDateTime
-        $success_log = Join-Path $LogPath ($timestamp + ".maintenance.log.txt")
-        $error_log = Join-Path $LogPath ($timestamp + ".maintenance.err.txt")
+        $success_log = Join-Path $Script:LogPath ($timestamp + ".maintenance.log.txt")
+        $error_log = Join-Path $Script:LogPath ($timestamp + ".maintenance.err.txt")
 
         $repository_available = Invoke-ConnectivityCheck $success_log $error_log
         if($repository_available -eq $true) {
@@ -627,7 +627,7 @@ function Invoke-Main {
     Set-BackupState
 
     # cleanup older log files
-    Get-ChildItem $LogPath | Where-Object {$_.CreationTime -lt $(Get-Date).AddDays(-$LogRetentionDays)} | Remove-Item
+    Get-ChildItem $Script:LogPath | Where-Object {$_.CreationTime -lt $(Get-Date).AddDays(-$LogRetentionDays)} | Remove-Item
 
     exit $error_count
 }

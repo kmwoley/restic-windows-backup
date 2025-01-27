@@ -17,8 +17,8 @@ $ConfigScript = Join-Path $PSScriptRoot "config.ps1"
 . $ConfigScript
 
 # apply global configuration
-$global:ResticExe = Join-Path $InstallPath $ExeName
-$global:LogPath = Join-Path $InstallPath "logs"
+$ResticExe = Join-Path $InstallPath $ExeName
+$LogPath = Join-Path $InstallPath "logs"
 
 # =========== end configuration =========== #
 
