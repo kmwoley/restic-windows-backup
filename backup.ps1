@@ -383,16 +383,26 @@ function Send-Email {
 # returns $true the current connection is a metered network
 function Invoke-MeteredCheck {
 
-    [void][Windows.Networking.Connectivity.NetworkInformation, Windows, ContentType = WindowsRuntime]
+    $scriptBlock = {
+        # load NetworkInformation class from the Windows Runtime (WinRT) environment
+        [void][Windows.Networking.Connectivity.NetworkInformation, Windows, ContentType = WindowsRuntime]
+            
+        $cost = [Windows.Networking.Connectivity.NetworkInformation]::GetInternetConnectionProfile().GetConnectionCost()
+        return ($cost.ApproachingDataLimit -or $cost.OverDataLimit -or $cost.Roaming -or $cost.BackgroundDataUsageRestricted -or ($cost.NetworkCostType -ne 'Unrestricted'))
+    }
     
-    $cost = [Windows.Networking.Connectivity.NetworkInformation]::GetInternetConnectionProfile().GetConnectionCost()
-    return ($cost.ApproachingDataLimit -or $cost.OverDataLimit -or $cost.Roaming -or $cost.BackgroundDataUsageRestricted -or ($cost.NetworkCostType -ne "Unrestricted"))
+    # run this check in PowerShell 5.1
+    # this is a workarond for lack of WinRT support in PowerShell 7
+    $result = powershell.exe -Version 5.1 -Command "$scriptBlock"
+    return ($result -ieq "True")
 }
 
 # check network conditions, retrying a limited number of times until a connection is established
 # returns $true if the repository is accessable and the configuration allows us to use it
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
+
+    $sleep_time = 30
 
     if($InternetTestAttempts -le 0) {
         "[[Internet]] Internet connectivity check disabled. Skipping." | Out-File -Append $SuccessLog
@@ -440,23 +450,30 @@ function Invoke-ConnectivityCheck {
     # test for internet connectivity
     $connections = 0
     $sleep_count = $InternetTestAttempts
+    $restricted_by_metered_network = $false
     while($true) {
         $connections = Get-NetRoute | Where-Object DestinationPrefix -eq '0.0.0.0/0' | Get-NetIPInterface | Where-Object ConnectionState -eq 'Connected' | Measure-Object | ForEach-Object{$_.Count}
         if($sleep_count -le 0) {
-            "[[Internet]] Connection to repository ($repository_host) could not be established." | Tee-Object -Append $SuccessLog | Out-File -Append $ErrorLog
+            if($restricted_by_metered_network) {
+                "[[Internet]] Connection to repository ($repository_host) is available but blocked by metered network." | Tee-Object -Append $SuccessLog | Out-File -Append $ErrorLog
+            }
+            else {
+                "[[Internet]] Connection to repository ($repository_host) could not be established." | Tee-Object -Append $SuccessLog | Out-File -Append $ErrorLog
+            }
             return $false
         }
         if(($null -eq $connections) -or ($connections -eq 0)) {
-            "[[Internet]] Waiting for internet connectivity... $sleep_count" | Out-File -Append $SuccessLog
-            Start-Sleep 30
+            "[[Internet]] Waiting $sleep_time seconds for internet connectivity... ($sleep_count/$InternetTestAttempts)" | Out-File -Append $SuccessLog
+            Start-Sleep $sleep_time
         }
         elseif(!(Test-Connection -ComputerName $repository_host -Quiet)) {
-            "[[Internet]] Waiting for connection to repository ($repository_host)... $sleep_count" | Out-File -Append $SuccessLog
-            Start-Sleep 30
+            "[[Internet]] Waiting $sleep_time seconds for connection to repository ($repository_host)... ($sleep_count/$InternetTestAttempts)" | Out-File -Append $SuccessLog
+            Start-Sleep $sleep_time
         }
         elseif((-not ([String]::IsNullOrEmpty($BackupOnMeteredNetwork) -or $BackupOnMeteredNetwork)) -and (Invoke-MeteredCheck)) {
-            "[[Internet]] Waiting for an unmetered network connection... $sleep_count" | Out-File -Append $SuccessLog        
-            Start-Sleep 30
+            "[[Internet]] Waiting $sleep_time seconds for an unmetered network connection... ($sleep_count/$InternetTestAttempts)" | Out-File -Append $SuccessLog        
+            $restricted_by_metered_network = $true
+            Start-Sleep $sleep_time
         }
         else {
             return $true
