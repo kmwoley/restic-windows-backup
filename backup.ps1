@@ -294,6 +294,32 @@ function Invoke-Backup {
     return $return_value
 }
 
+function Get-SavedCredential {
+	<#
+	.SYNOPSIS
+		Simple function to get and save domain credentials.
+	.LINK
+		http://community.spiceworks.com/scripts/show/1629-get-secure-credentials-function
+	#>
+    Param ([String]$AuthUser = $env:USERNAME, [string]$PathToCred)
+
+    $Key = [byte]231,195,218,179,118,15,33,162,18,106,78,122,17,124,116,212,246,97,61,146,201,227,209,160
+
+    #Build the path to the credential file
+    $CredFile = $AuthUser.Replace("\","~")
+    $File = $PathToCred + "\Credentials-$CredFile.crd"
+    #And find out if it's there, if not create it
+    If (-not (Test-Path $File))
+    {	(Get-Credential $AuthUser).Password | ConvertFrom-SecureString -Key $Key | Set-Content $File
+    }
+    #Load the credential file 
+    $Password = Get-Content $File | ConvertTo-SecureString -Key $Key
+    $AuthUser = (Split-Path $File -Leaf).Substring(12).Replace("~","\")
+    $AuthUser = $AuthUser.Substring(0,$AuthUser.Length - 4)
+    $Credential = New-Object System.Management.Automation.PsCredential($AuthUser,$Password)
+    Return $Credential
+}
+
 function Send-Email {
     Param($SuccessLog, $ErrorLog, $Action)
 
@@ -304,12 +330,10 @@ function Send-Email {
         $Action = "Backup"
     }
 
-    # set email credentials if a username and passsword are provided in configuration
-    $credentials = @{}
-    if (-not [String]::IsNullOrEmpty($ResticEmailPassword) -and -not [String]::IsNullOrEmpty($ResticEmailUsername)) {
-        $password = ConvertTo-SecureString -String $ResticEmailPassword -AsPlainText -Force
+    # use file for credentials if a username is provided in configuration
+    if (-not [String]::IsNullOrEmpty($ResticEmailUsername)) {
         $credentials = @{
-            "Credential" = [System.Management.Automation.PSCredential]::new($ResticEmailUsername, $password)
+            "Credential" = (Get-SavedCredential -AuthUser $ResticEmailUsername -PathToCred $PSScriptRoot)
         }
     }
 
