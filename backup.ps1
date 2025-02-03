@@ -4,7 +4,7 @@
 
 # =========== start configuration =========== #
 
-# load restic configuration parmeters (destination, passwords, etc.)
+# load restic configuration parameters (destination, passwords, etc.)
 $SecretsScript = Join-Path $PSScriptRoot "secrets.ps1"
 
 # load backup configuration variables
@@ -317,7 +317,7 @@ function Send-Email {
         }
     }
 
-    # Backwards compatability for $ResticEmailConfig port definition:
+    # Backwards compatibility for $ResticEmailConfig port definition:
     # $ResticEmailConfig is obsolete and should be replaced with $ResticEmailPort
     if ($null -ne $ResticEmailConfig -and $ResticEmailConfig.ContainsKey('Port')) {
         if ($null -eq $ResticEmailPort) {
@@ -392,13 +392,13 @@ function Invoke-MeteredCheck {
     }
     
     # run this check in PowerShell 5.1
-    # this is a workarond for lack of WinRT support in PowerShell 7
+    # this is a workaround for lack of WinRT support in PowerShell 7
     $result = powershell.exe -Version 5.1 -Command "$scriptBlock"
     return ($result -ieq "True")
 }
 
 # check network conditions, retrying a limited number of times until a connection is established
-# returns $true if the repository is accessable and the configuration allows us to use it
+# returns $true if the repository is accessible and the configuration allows us to use it
 function Invoke-ConnectivityCheck {
     Param($SuccessLog, $ErrorLog)
 
