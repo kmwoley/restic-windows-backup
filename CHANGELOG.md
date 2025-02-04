@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.1](https://github.com/kmwoley/restic-windows-backup/tree/1.7.1) (2025-02-03)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.7...1.7.1)
+
+## Summary
+* (Optionally) prevent backup & maintenance while on a metered network connection. By default, backups will occur while on a metered network connection. To disable backups over metered network connections, set `$BackupOnMeteredNetwork = $false` in `config.ps1`
+* Added `$GlobalParameters = @()` configuration variable, which will apply additional configuration parameters every time `restic.exe` is run. This is useful to add options for different types of backend targets.
+* Added `$SelfUpdateEnabled = $true` configuration variable, which can be used to disable `restic.exe` from automatically updating to the latest version when maintenance is run. To disable self update, set `$SelfUpdateEnabled = $false` in `config.ps1`
+ 
+## What's Changed
+* Add optional configuration options for additional parameters to resti… by @woelfisch in https://github.com/kmwoley/restic-windows-backup/pull/96
+* Add feature to control backups on metered connections by @innovara in https://github.com/kmwoley/restic-windows-backup/pull/108
+
+## New Contributors
+* @woelfisch made their first contribution in https://github.com/kmwoley/restic-windows-backup/pull/96
+
 ## [1.7](https://github.com/kmwoley/restic-windows-backup/tree/1.7) (2025-01-25)
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.6...1.7)
 
