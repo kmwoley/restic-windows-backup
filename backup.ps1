@@ -65,6 +65,20 @@ function Get-Drives {
     }
 }
 
+# test the path's storage media for VSS support
+#  returns $true if VSS is supported at the provided path
+function Test-VSSSupport {
+    Param($test_path)
+
+    $drive_letter = Split-Path $test_path -Qualifier
+    $volume = Get-WmiObject -Query "SELECT * FROM Win32_Volume WHERE DriveLetter = '$drive_letter'" 
+    $deviceID = ($volume.DeviceID -replace '.*(\{.*\}).*', '$1')
+    ### https://learn.microsoft.com/en-us/previous-versions/windows/desktop/vsswmi/win32-shadowvolumesupport
+    $supportedVolumes = Get-WmiObject -Query "SELECT * FROM Win32_ShadowVolumeSupport WHERE __PATH LIKE '%$deviceID%'"
+
+    return ($null -ne $supportedVolumes)
+}
+
 # restore backup state from disk
 function Get-BackupState {
     if(Test-Path $Script:StateFile) {
@@ -204,8 +218,6 @@ function Invoke-Backup {
         $root_path = $item.Key
         $tag = $item.Key
 
-        $vss_option = "--use-fs-snapshot"
-
         # Test if root path is a valid path, if not assume it is an external drive identifier
         if(-not (Test-Path $root_path)) {
             # attempt to find a drive letter associated with the identifier provided
@@ -228,13 +240,16 @@ function Invoke-Backup {
                 continue
             }
 
+            # there is exactly one drive
             $root_path = Join-Path $drives[0].DriveLetter ""
-
-            # disable VSS / file system snapshot for external drives
-            # TODO: would be best to just test for VSS compatibility on the drive, rather than assume it won't work
-            $vss_option = $null
         }
 
+        # determine if VSS is supported by the drive
+        $vss_option = $null
+        if(Test-VSSSupport $root_path) {
+            $vss_option = "--use-fs-snapshot"
+        }
+        
         "[[Backup]] Start $(Get-Date) [$tag]" | Out-File -Append $SuccessLog
 
         # build the list of folders to backup
