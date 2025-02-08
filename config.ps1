@@ -51,7 +51,7 @@ $CustomActionStart = $null
 $CustomActionEndError = $null
 $CustomActionEndSuccess = $null
 
-# Examples: Calling a healthcheck remote service
+# Example: Calling a healthcheck remote service
 # $healthCheckURL = "https://healthcheckservice.com/etc/etc"
 # $CustomActionStart = "Invoke-RestMethod $healthCheckURL/start"
 # $CustomActionEndError = "Invoke-RestMethod $healthCheckURL/fail"
