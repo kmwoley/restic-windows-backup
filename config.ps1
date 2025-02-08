@@ -41,3 +41,12 @@ $SnapshotDeepMaintenanceDays = 90
 
 # restic.exe self update configuration
 $SelfUpdateEnabled = $true
+
+# (optional) custom actions 
+# Define commands to pass to Invoke-Expression at script start and end
+# note: Errors will only be reported if the script does not eventually succeed. Errors 
+#       from unsuccessful attempts to backup or maintain the repository will not result
+#       in the custom error action being called unless all attempts failed. 
+$CustomActionStart = $null
+$CustomActionEndError = $null
+$CustomActionEndSuccess = $null

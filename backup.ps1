@@ -546,6 +546,11 @@ function Invoke-Main {
         exit 1
     }
 
+    # custom start action
+    if($null -ne $CustomActionStart) {
+        Invoke-Expression $CustomActionStart
+    }
+
     $error_count = 0
     $backup_success = $false
     $maintenance_success = $false
@@ -669,6 +674,20 @@ function Invoke-Main {
         else {
             break
         }
+    }
+
+    # custom end actions
+    if((-not $backup_success) -or ($maintenance_needed -and -not $maintenance_success)) {
+        # call the custom error action if backup failed and/or maintenance was needed and failed
+        if($null -ne $CustomActionEndError) {
+            Invoke-Expression $CustomActionEndError
+        }
+    }
+    else {
+        # call custom success action if backup & maintenance were successful
+        if($null -ne $CustomActionEndSuccess) {
+            Invoke-Expression $CustomActionEndSuccess
+        }        
     }
 
     # Save state to file
