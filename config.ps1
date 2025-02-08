@@ -1,5 +1,5 @@
 # general configuration
-$InstallPath = "C:\restic_dev"
+$InstallPath = "C:\restic"
 $ExeName = "restic.exe"
 $GlobalParameters = @()
 $LogRetentionDays = 30
@@ -20,9 +20,8 @@ $AdditionalBackupParameters = @("--exclude-if-present", ".nobackup", "--no-scan"
 # Paths to backup
 $BackupSources = @{}
 $BackupSources["C:\"] = @(
-    "restic_dev",
-    "restic",
-    "temp\directory with spaces"
+#    "Users\Example\Desktop\Source1",
+#    "Users\Example\Desktop\Source2"
 )
 # $BackupSources["D:\"] = @(
 #    "Example\Source3",
