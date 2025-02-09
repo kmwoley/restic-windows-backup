@@ -1,3 +1,7 @@
+# Sample configuration file
+# Update this file to control how the restic backup, forget, and purge operations are run
+# Rename to `config.ps1`
+
 # general configuration
 $InstallPath = "C:\restic"
 $ExeName = "restic.exe"

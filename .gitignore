@@ -2,6 +2,7 @@ local.exclude
 logs
 restic.exe
 secrets.ps1
+config.ps1
 state.xml
 testing
 restic.exe.bak

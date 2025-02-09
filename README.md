@@ -14,7 +14,7 @@ Simplifies the process of installation and running daily backups.
 # Installation Instructions
 
 1. Create your restic repository
-   1. This is up to you to sort out where you want the data to go to. *Minio, B2, S3, oh my.*
+   1. This is up to you to sort out where you want the data to go to. *Minio, B2, S3, etc.*
 1. Install Scripts
    1. Create script directory: `C:\restic`
    1. Download scripts from https://github.com/kmwoley/restic-windows-backup, and unzip them into `C:\restic`
@@ -24,15 +24,21 @@ Simplifies the process of installation and running daily backups.
    1. Depending on the policy you choose, may need to 'unblock' the execution of the scripts you download by running `Unblock-File *.ps1`
 1. Create `secrets.ps1` file
    1. The secrets file contains location and passwords for your restic repository.
-   1. `secrets_template.ps1` is a template for the `secrets.ps1` file - copy or rename this file to `secrets.ps1` and edit.
-   1. restic will pick up the repo destination from the environment variables you set in this file - see this doc for more information about configuring restic repos https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html
-   1. Email sending configuration is also contained with this file. The scripts assume you want to get emails about the success/failure of each backup attempt.
+   1. `secrets_sample.ps1` is an example of the `secrets.ps1` file. Copy or rename this file to `secrets.ps1` and edit.
+   1. Restic will pick up the repo destination from the environment variables you set in this file - see this doc for more information about configuring restic repos https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html
+   1. Email sending configuration is also contained with this file. The scripts are able to send email about the success/failure of each backup attempt.
+1. Create `config.ps1` file
+   1. The config file contains the settings that control how the script runs backups, forgets snapshots, and prunes the restic repository. It's important that you configure this file to meet your needs since it will be backing up and maintaining your repository.
+   1. `config_sample.ps1` contins an example configuration file. Copy or rename this file to `config.ps1` and edit to suit your needs.
+   1. Add your `$BackupSources` to `config.ps1`
+      1. By default, all of `C:\` will be backed up. You can add multiple root drives to be backed up. And you can define only specific folders you would like backed up.
+      1. External, removable disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]=@()`. It is recommended to use the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command. You may also want to set `$IgnoreMissingBackupSources=$true` to avoid seeing errors when the removable drive is not present.
+   1. Review all of the default settings in `config.ps1`. 
+      1. Most of the defaults are safe, but you should be sure restic is configured to meet your specifics needs.
+      1. **Warning** - if you're using a shared restic repository across multiple machines, pay close attention to the `$SnapshotRetentionPolicy` settings to be sure this script does not intentionally destroy backup data in your repository.
 1. Run `install.ps1` file
    1. From the elevated (Run as Administrator) Powershell window, run `.\install.ps1`
    1. This will initialize the repo, create your logfile directory, create a scheduled task in Windows Task Scheduler to run the task daily, and install Send-MailKitMessage module.
-1. Add your `$BackupSources` to `config.ps1`
-   1. By default, all of `C:\` will be backed up. You can add multiple root drives to be backed up. And you can define only specific folders you would like backed up.
-   1. External, removable disk drives (i.e. USB hard drives) can be identified by their Volume Label, Serial Number, or Device Name. For example, if you have an external device with the Volume Label "MY BOOK", you can define a backup source as `$BackupSources["MY BOOK"]=@()`. I would recommend using the device serial number to identify external drives to backup, which you can find using the Powershell `get-disk` command. You may also want to set `$IgnoreMissingBackupSources=$true` to avoid seeing errors when the removable drive is not present.
 1. Add files/paths not to backup to `local.exclude`
    1. If you don't want to modify the included exclude file, you can add any files/paths you want to exclude from the backup to `local.exclude`
 1. Add `C:\restic\restic.exe` to the Windows Defender / Virus & Threat Detection Exclude list
