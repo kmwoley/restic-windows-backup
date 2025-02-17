@@ -17,6 +17,18 @@
        - Compares the latest commit SHA on that branch against a locally stored SHA.
        - If the remote commit SHA differs, downloads the branch zip archive, extracts it,
          copies the files over the local installation.
+
+.NOTES
+    Example 1 - update scripts to the latest tagged release
+    .\update.ps1
+
+    Example 2 - update scripts from a branch
+    .\update.ps1 -Mode branch -BranchName 'release_1.8'
+
+    Example 3 - download a new copy of the update scripts and run it
+    1. Change your directory to your installation directory (e.g. `cd c:\restic`)
+    2. Invoke-WebRequest "https://raw.githubusercontent.com/kmwoley/restic-windows-backup/main/update.ps1" -OutFile update.ps1
+    3. .\update.ps1
 #>
 
 [CmdletBinding()]
