@@ -42,7 +42,7 @@ if(-not (Test-Path $ResticExe)) {
         Get-ChildItem *.exe | Rename-Item -NewName $ExeName
     }
     catch {
-        Write-Error "[[Install]] restic.exe download failed. Check errors and resolve: $_"
+        Write-Error "[[Install]] restic.exe download failed. Check errors and resolve."
         exit 1
     }
 }
@@ -57,7 +57,7 @@ if(-not [String]::IsNullOrEmpty($GlobalParameters)) {
 if ([String]::IsNullOrEmpty($SelfUpdateEnabled) -or ($SelfUpdateEnabled -eq $true)) {
     Invoke-Expression "$ResticExe self-update"
     if($LASTEXITCODE) {
-        Write-Warning "[[Update]] Restic self-update failed. Check errors and resolve: $_"
+        Write-Warning "[[Update]] Restic self-update failed. Check errors and resolve."
     }
 }
 
@@ -75,7 +75,7 @@ if(-not (Test-Path $LocalExcludeFile)) {
 # Initialize the restic repository
 Invoke-Expression "$ResticExe --verbose init"
 if($LASTEXITCODE) {
-    Write-Warning "[[Init]] Repository initialization failed. Check errors and resolve: $_"
+    Write-Warning "[[Init]] Repository initialization failed. Check errors and resolve."
 }
 else {
     Write-Output "[[Init]] Repository successfully initialized."
@@ -94,7 +94,7 @@ if($null -eq $backup_task) {
         Write-Output "[[Scheduler]] Backup task scheduled."
     }
     catch {
-        Write-Error "[[Scheduler]] Setting up backup task schedule failed: $_"
+        Write-Error "[[Scheduler]] Setting up backup task schedule failed."
     }
 }
 else {
