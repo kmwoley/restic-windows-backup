@@ -57,7 +57,12 @@ $headers = @{ "User-Agent" = "PowerShell" }
 
 # default the installation directory to the location of the running script
 if([string]::IsNullOrEmpty($InstallPath)) {
-    $InstallPath = $PSScriptRoot 
+    # default to the script's location, if running as a script
+    $InstallPath = $PSScriptRoot
+    if([string]::IsNullOrEmpty($InstallPath)) {
+        # default to the current working directory, if not running as a script
+        $InstallPath = Get-Location
+    }
 }
 
 # ====================================
