@@ -12,6 +12,9 @@ $ConfigScript = Join-Path $PSScriptRoot "config.ps1"
 
 # =========== end configuration =========== #
 
+# make LASTEXITCODE global to enable error checking for Invoke-Expression commands
+$global:LASTEXITCODE=0
+
 # globals for state storage
 $Script:ResticStateRepositoryInitialized = $null
 $Script:ResticStateLastMaintenance = $null
@@ -94,9 +97,15 @@ function Invoke-Unlock {
     Param($SuccessLog, $ErrorLog)
 
     $locks = Invoke-Expression "$Script:ResticExe list locks --no-lock -q 3>&1 2>> $ErrorLog"
+    if($LASTEXITCODE) {
+        "[[Unlock]] Warning: unable to list locks." | Tee-Object -Append $ErrorLog
+    }
     if($locks.Length -gt 0) {
         # unlock the repository (assumes this machine is the only one that will ever use it)
         Invoke-Expression "$Script:ResticExe unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+        if($LASTEXITCODE) {
+            "[[Unlock]] Error - unable to unlock repository." | Tee-Object -Append $ErrorLog
+        }
         "[[Unlock]] Repository was locked. Unlocking." | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         Start-Sleep 120
     }
@@ -142,7 +151,7 @@ function Invoke-Maintenance {
     # forget snapshots based upon the retention policy
     "[[Maintenance]] Start forgetting..." | Out-File -Append $SuccessLog
     Invoke-Expression "$Script:ResticExe forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-    if(-not $?) {
+    if($LASTEXITCODE) {
         "[[Maintenance]] Forget operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
     }
@@ -151,7 +160,7 @@ function Invoke-Maintenance {
     #   `forget` only prunes when it detects removed snapshots upon invocation, not previously removed
     "[[Maintenance]] Start pruning..." | Out-File -Append $SuccessLog
     Invoke-Expression "$Script:ResticExe prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-    if(-not $?) {
+    if($LASTEXITCODE) {
         "[[Maintenance]] Prune operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
     }
@@ -178,8 +187,8 @@ function Invoke-Maintenance {
     }
 
     Invoke-Expression "$Script:ResticExe check $data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-    if(-not $?) {
-        "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
+    if($LASTEXITCODE) {
+        "[[Maintenance]] Data check completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
         $maintenance_success = $false
     }
 
@@ -189,7 +198,7 @@ function Invoke-Maintenance {
         # check for updated restic version
         "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
         Invoke-Expression "$Script:ResticExe self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-        if(-not $?) {
+        if($LASTEXITCODE) {
             "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
             $maintenance_success = $false
         }
@@ -298,7 +307,7 @@ function Invoke-Backup {
         else {
             # Launch Restic
             Invoke-Expression "$Script:ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-            if(-not $?) {
+            if($LASTEXITCODE) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
                 $return_value = $false
             }
