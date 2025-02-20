@@ -42,7 +42,7 @@ if(-not (Test-Path $ResticExe)) {
         Get-ChildItem *.exe | Rename-Item -NewName $ExeName
     }
     catch {
-        Write-Error "[[Install]] restic.exe download failed. Check errors and resolve."
+        Write-Error "[[Install]] restic.exe download failed. Check errors and resolve: $_"
         exit 1
     }
 }
@@ -94,7 +94,7 @@ if($null -eq $backup_task) {
         Write-Output "[[Scheduler]] Backup task scheduled."
     }
     catch {
-        Write-Error "[[Scheduler]] Setting up backup task schedule failed."
+        Write-Error "[[Scheduler]] Setting up backup task schedule failed: $_"
     }
 }
 else {
