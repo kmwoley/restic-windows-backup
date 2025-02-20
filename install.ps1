@@ -29,7 +29,7 @@ $global:LASTEXITCODE=0
 if(-not (Test-Path $ResticExe)) {
     $url = $null
     if([Environment]::Is64BitOperatingSystem){
-        $url = "fixmetestingnotrealhttps://github.com/restic/restic/releases/download/v0.17.3/restic_0.17.3_windows_amd64.zip"
+        $url = "https://github.com/restic/restic/releases/download/v0.17.3/restic_0.17.3_windows_amd64.zip"
     }
     else {
         $url = "https://github.com/restic/restic/releases/download/v0.17.3/restic_0.17.3_windows_386.zip"
