@@ -12,6 +12,9 @@ $ConfigScript = Join-Path $PSScriptRoot "config.ps1"
 
 # =========== end configuration =========== #
 
+# make LASTEXITCODE global to enable error checking for Invoke-Expression commands
+$global:LASTEXITCODE=0
+
 # globals for state storage
 $Script:ResticStateRepositoryInitialized = $null
 $Script:ResticStateLastMaintenance = $null
@@ -65,6 +68,20 @@ function Get-Drives {
     }
 }
 
+# test the path's storage media for VSS support
+#  returns $true if VSS is supported at the provided path
+function Test-VSSSupport {
+    Param($test_path)
+
+    $drive_letter = Split-Path $test_path -Qualifier
+    $volume = Get-WmiObject -Query "SELECT * FROM Win32_Volume WHERE DriveLetter = '$drive_letter'" 
+    $deviceID = ($volume.DeviceID -replace '.*(\{.*\}).*', '$1')
+    ### https://learn.microsoft.com/en-us/previous-versions/windows/desktop/vsswmi/win32-shadowvolumesupport
+    $supportedVolumes = Get-WmiObject -Query "SELECT * FROM Win32_ShadowVolumeSupport WHERE __PATH LIKE '%$deviceID%'"
+
+    return ($null -ne $supportedVolumes)
+}
+
 # restore backup state from disk
 function Get-BackupState {
     if(Test-Path $Script:StateFile) {
@@ -80,9 +97,15 @@ function Invoke-Unlock {
     Param($SuccessLog, $ErrorLog)
 
     $locks = Invoke-Expression "$Script:ResticExe list locks --no-lock -q 3>&1 2>> $ErrorLog"
+    if($LASTEXITCODE) {
+        "[[Unlock]] Warning: unable to list locks." | Tee-Object -Append $ErrorLog
+    }
     if($locks.Length -gt 0) {
         # unlock the repository (assumes this machine is the only one that will ever use it)
         Invoke-Expression "$Script:ResticExe unlock 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
+        if($LASTEXITCODE) {
+            "[[Unlock]] Error - unable to unlock repository." | Tee-Object -Append $ErrorLog
+        }
         "[[Unlock]] Repository was locked. Unlocking." | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         Start-Sleep 120
     }
@@ -128,7 +151,7 @@ function Invoke-Maintenance {
     # forget snapshots based upon the retention policy
     "[[Maintenance]] Start forgetting..." | Out-File -Append $SuccessLog
     Invoke-Expression "$Script:ResticExe forget $SnapshotRetentionPolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-    if(-not $?) {
+    if($LASTEXITCODE) {
         "[[Maintenance]] Forget operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
     }
@@ -137,7 +160,7 @@ function Invoke-Maintenance {
     #   `forget` only prunes when it detects removed snapshots upon invocation, not previously removed
     "[[Maintenance]] Start pruning..." | Out-File -Append $SuccessLog
     Invoke-Expression "$Script:ResticExe prune $SnapshotPrunePolicy 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-    if(-not $?) {
+    if($LASTEXITCODE) {
         "[[Maintenance]] Prune operation completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
         $maintenance_success = $false
     }
@@ -164,8 +187,8 @@ function Invoke-Maintenance {
     }
 
     Invoke-Expression "$Script:ResticExe check $data_check 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-    if(-not $?) {
-        "[[Maintenance]] Check completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
+    if($LASTEXITCODE) {
+        "[[Maintenance]] Data check completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
         $maintenance_success = $false
     }
 
@@ -175,7 +198,7 @@ function Invoke-Maintenance {
         # check for updated restic version
         "[[Maintenance]] Checking for new version of restic..." | Out-File -Append $SuccessLog
         Invoke-Expression "$Script:ResticExe self-update 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-        if(-not $?) {
+        if($LASTEXITCODE) {
             "[[Maintenance]] Self-update of restic.exe completed with errors" | Tee-Object -Append $ErrorLog | Out-File -Append $SuccessLog
             $maintenance_success = $false
         }
@@ -204,8 +227,6 @@ function Invoke-Backup {
         $root_path = $item.Key
         $tag = $item.Key
 
-        $vss_option = "--use-fs-snapshot"
-
         # Test if root path is a valid path, if not assume it is an external drive identifier
         if(-not (Test-Path $root_path)) {
             # attempt to find a drive letter associated with the identifier provided
@@ -228,13 +249,16 @@ function Invoke-Backup {
                 continue
             }
 
+            # there is exactly one drive
             $root_path = Join-Path $drives[0].DriveLetter ""
-
-            # disable VSS / file system snapshot for external drives
-            # TODO: would be best to just test for VSS compatibility on the drive, rather than assume it won't work
-            $vss_option = $null
         }
 
+        # determine if VSS is supported by the drive
+        $vss_option = $null
+        if(Test-VSSSupport $root_path) {
+            $vss_option = "--use-fs-snapshot"
+        }
+        
         "[[Backup]] Start $(Get-Date) [$tag]" | Out-File -Append $SuccessLog
 
         # build the list of folders to backup
@@ -283,7 +307,7 @@ function Invoke-Backup {
         else {
             # Launch Restic
             Invoke-Expression "$Script:ResticExe backup $folder_list $vss_option --tag $tag --exclude-file=$WindowsExcludeFile --exclude-file=$LocalExcludeFile $AdditionalBackupParameters 3>&1 2>> $ErrorLog | Out-File -Append $SuccessLog"
-            if(-not $?) {
+            if($LASTEXITCODE) {
                 "[[Backup]] Completed with errors" | Tee-Object -Append $ErrorLog | Tee-Object -Append $SuccessLog | Write-Host
                 $return_value = $false
             }
@@ -531,6 +555,11 @@ function Invoke-Main {
         exit 1
     }
 
+    # custom start action
+    if($null -ne $CustomActionStart) {
+        Invoke-Expression $CustomActionStart
+    }
+
     $error_count = 0
     $backup_success = $false
     $maintenance_success = $false
@@ -654,6 +683,20 @@ function Invoke-Main {
         else {
             break
         }
+    }
+
+    # custom end actions
+    if((-not $backup_success) -or ($maintenance_needed -and -not $maintenance_success)) {
+        # call the custom error action if backup failed and/or maintenance was needed and failed
+        if($null -ne $CustomActionEndError) {
+            Invoke-Expression $CustomActionEndError
+        }
+    }
+    else {
+        # call custom success action if backup & maintenance were successful
+        if($null -ne $CustomActionEndSuccess) {
+            Invoke-Expression $CustomActionEndSuccess
+        }        
     }
 
     # Save state to file

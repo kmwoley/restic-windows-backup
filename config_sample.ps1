@@ -1,3 +1,7 @@
+# Sample configuration file
+# Update this file to control how the restic backup, forget, and purge operations are run
+# Rename to `config.ps1`
+
 # general configuration
 $InstallPath = "C:\restic"
 $ExeName = "restic.exe"
@@ -41,3 +45,22 @@ $SnapshotDeepMaintenanceDays = 90
 
 # restic.exe self update configuration
 $SelfUpdateEnabled = $true
+
+# (optional) custom actions 
+# Define commands to pass to Invoke-Expression at script start and script end
+# note: Errors will only be reported if the script does not eventually succeed. Errors 
+#       from unsuccessful attempts to backup or maintain the repository will not result
+#       in the custom error action being called unless all attempts to backup or maintain failed. 
+$CustomActionStart = $null
+$CustomActionEndError = $null
+$CustomActionEndSuccess = $null
+
+# Example: Calling a healthcheck remote service
+# $healthCheckURL = "https://healthcheckservice.com/etc/etc"
+# $CustomActionStart = "Invoke-RestMethod $healthCheckURL/start"
+# $CustomActionEndError = "Invoke-RestMethod $healthCheckURL/fail"
+# $CustomActionEndSuccess = "Invoke-RestMethod $healthCheckURL"
+
+# Example: Invoking a script
+# $successScript = Join-Path $InstallPath "mySuccessScript.ps1"
+# $CustomActionEndSuccess = "& $successScript"

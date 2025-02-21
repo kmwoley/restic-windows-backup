@@ -20,6 +20,9 @@ $ConfigScript = Join-Path $PSScriptRoot "config.ps1"
 $ResticExe = Join-Path $InstallPath $ExeName
 $LogPath = Join-Path $InstallPath "logs"
 
+# make LASTEXITCODE global to enable error checking for Invoke-Expression commands
+$global:LASTEXITCODE=0
+
 # =========== end configuration =========== #
 
 # download restic
@@ -31,11 +34,17 @@ if(-not (Test-Path $ResticExe)) {
     else {
         $url = "https://github.com/restic/restic/releases/download/v0.17.3/restic_0.17.3_windows_386.zip"
     }
-    $output = Join-Path $InstallPath "restic.zip"
-    Invoke-WebRequest -Uri $url -OutFile $output
-    Expand-Archive -LiteralPath $output $InstallPath
-    Remove-Item $output
-    Get-ChildItem *.exe | Rename-Item -NewName $ExeName
+    try {
+        $output = Join-Path $InstallPath "restic.zip"
+        Invoke-WebRequest -Uri $url -OutFile $output
+        Expand-Archive -LiteralPath $output $InstallPath
+        Remove-Item $output
+        Get-ChildItem *.exe | Rename-Item -NewName $ExeName
+    }
+    catch {
+        Write-Error "[[Install]] restic.exe download failed. Check errors and resolve: $_"
+        exit 1
+    }
 }
 
 # Apply global paramters to $ResticExe, after the $ResticExe has been downloaded/confirmed to exist
@@ -47,6 +56,9 @@ if(-not [String]::IsNullOrEmpty($GlobalParameters)) {
 # This is enabled by default unless configuration disables self-update
 if ([String]::IsNullOrEmpty($SelfUpdateEnabled) -or ($SelfUpdateEnabled -eq $true)) {
     Invoke-Expression "$ResticExe self-update"
+    if($LASTEXITCODE) {
+        Write-Warning "[[Update]] Restic self-update failed. Check errors and resolve."
+    }
 }
 
 # Create log directory if it doesn't exit
@@ -62,11 +74,11 @@ if(-not (Test-Path $LocalExcludeFile)) {
 
 # Initialize the restic repository
 Invoke-Expression "$ResticExe --verbose init"
-if($?) {
-    Write-Output "[[Init]] Repository successfully initialized."
+if($LASTEXITCODE) {
+    Write-Warning "[[Init]] Repository initialization failed. Check errors and resolve."
 }
 else {
-    Write-Warning "[[Init]] Repository initialization failed. Check errors and resolve."
+    Write-Output "[[Init]] Repository successfully initialized."
 }
 
 # Scheduled Windows Task Scheduler to run the backup
@@ -75,14 +87,14 @@ $backup_task = Get-ScheduledTask $backup_task_name -ErrorAction SilentlyContinue
 if($null -eq $backup_task) {
     try {
         $task_action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-ExecutionPolicy Bypass -NonInteractive -NoLogo -NoProfile -Command ".\backup.ps1; exit $LASTEXITCODE"' -WorkingDirectory $InstallPath
-        $task_user = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest
+        $task_user = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
         $task_settings = New-ScheduledTaskSettingsSet -RestartCount 4 -RestartInterval (New-TimeSpan -Minutes 15) -ExecutionTimeLimit (New-TimeSpan -Days 3) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -MultipleInstances IgnoreNew -IdleDuration 0 -IdleWaitTimeout 0 -StartWhenAvailable -RestartOnIdle
         $task_trigger = New-ScheduledTaskTrigger -Daily -At 4:00am
         Register-ScheduledTask $backup_task_name -Action $task_action -Principal $task_user -Settings $task_settings -Trigger $task_trigger | Out-Null
         Write-Output "[[Scheduler]] Backup task scheduled."
     }
     catch {
-        Write-Warning "[[Scheduler]] Scheduling failed."
+        Write-Error "[[Scheduler]] Setting up backup task schedule failed: $_"
     }
 }
 else {
