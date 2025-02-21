@@ -8,13 +8,13 @@
 
     1. **Release mode (default):**
        - Fetches the latest release info via GitHub’s API.
-       - Compares the release tag (after normalization) against a locally stored version (in version.txt).
+       - Compares the release tag (after normalization) against a locally stored version (in state.xml).
        - If the GitHub release is newer, downloads the release zip, extracts it, copies the files
          over the local installation.
 
     2. **Branch mode:**
        - Targets a specific branch (default "main") by retrieving branch information from GitHub.
-       - Compares the latest commit SHA on that branch against a locally stored SHA.
+       - Compares the latest commit SHA on that branch against a locally stored SHA (in state.xml).
        - If the remote commit SHA differs, downloads the branch zip archive, extracts it,
          copies the files over the local installation.
 
@@ -92,7 +92,6 @@ function Get-ModifiedFiles {
         [string]$DateTime
     )
 
-    ## FIXME: IS THERE A BETTER WAY TO INIT A LIST?
     $modifiedFiles = New-Object System.Collections.Generic.List[System.Object]
 
     if(-not (Test-Path $Source)) {
@@ -229,7 +228,7 @@ if ($Mode -eq "release") {
     # Read the version of the scripts installed
     $localVersion = $Script:ResticStateInstalledVersion
     if ([string]::IsNullOrEmpty($localVersion)) {
-        # Write-Host "No version information stored locally."
+        # No version information stored locally
         $localVersion = "0.0.0"
     }
   
@@ -245,17 +244,16 @@ if ($Mode -eq "release") {
 
     $latestTagRaw = $release.tag_name
     $latestTag    = $latestTagRaw.Trim()
-    # Write-Host "Latest GitHub release version: $latestTag"
 
     # Normalize versions (remove leading "v" if present)
-    function Normalize-Version($versionString) {
+    function Get-NormalizedVersion($versionString) {
         if ($versionString.StartsWith("v", [System.StringComparison]::InvariantCultureIgnoreCase)) {
             return $versionString.Substring(1)
         }
         return $versionString
     }
-    $normalizedLocalVersion  = Normalize-Version $localVersion
-    $normalizedLatestVersion = Normalize-Version $latestTag
+    $normalizedLocalVersion  = Get-NormalizedVersion $localVersion
+    $normalizedLatestVersion = Get-NormalizedVersion $latestTag
 
     try {
         $localVersionObj  = [Version]$normalizedLocalVersion
@@ -309,7 +307,6 @@ elseif ($Mode -eq "branch") {
     }
 
     $latestCommitSHA = $branchInfo.commit.sha
-    # Write-Host "Latest commit on $repoOwner/$repoName branch '$BranchName': $latestCommitSHA"
 
     if ($localCommitSHA -eq $latestCommitSHA) {
         Write-Host "Installed commit ($latestCommitSHA) is up-to-date. No update needed."
