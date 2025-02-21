@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8](https://github.com/kmwoley/restic-windows-backup/tree/1.8) (2025-02-20)
+[Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.7.1...1.8)
+
+## Summary
+* New features
+  * Added `update.ps1` which makes updating `restic-windows-backup` installations easier.
+  * Added the ability to run custom actions at the start and end of the script execution. Can be used to invoke healthchecks or run custom scripts. Look at `config_sample.ps1` for examples.
+
+* Bug fixes
+  * Explicitly test the backup source media for VSS support instead of assuming it is or is not supported
+  * Install script sets Task Scheduler user LogonType correctly, fixing #40
+  * Error checking of restic.exe results fixed (was broken by release 1.7.1)
+
 ## [1.7.1](https://github.com/kmwoley/restic-windows-backup/tree/1.7.1) (2025-02-03)
 [Full Changelog](https://github.com/kmwoley/restic-windows-backup/compare/1.7...1.7.1)
 
